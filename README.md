@@ -1,104 +1,36 @@
-# Harshit's DevOps Portfolio
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A high-fidelity, interactive DevOps portfolio demonstrating infrastructure skills, CI/CD expertise, and cloud engineering projects. Designed to reflect an industry-standard engineering aesthetic.
+## Getting Started
 
-This project has been migrated from Next.js to a custom Vite/React frontend + Node.js Express backend architecture.
+First, run the development server:
 
-## 🚀 Key Features
-
-- **Live System Telemetry:** Real-time observability dashboard streaming CPU, Memory, and Network metrics via Server-Sent Events (SSE).
-- **Interactive CLI Terminal:** A fully functional, web-based terminal interface for navigating directories and running commands.
-- **Git-Branch Experience Timeline:** Career and project history visualized as a Git commit tree.
-- **Pipeline-Style Skills Visualization:** Dynamic representation of technical proficiencies.
-- **3D Interactive Projects:** "IaC X-Ray" 3D-flip interactions for project cards using Three.js and React Three Fiber.
-- **Integrated Easter Eggs:** Playable mini-games including a racing game and GitHub Snake.
-- **Dark/Light Mode:** Seamless theme toggling for the entire application.
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework:** React 18
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS V4
-- **Animations:** Framer Motion
-- **3D Graphics:** Three.js, React Three Fiber (@react-three/fiber, @react-three/drei)
-- **Icons:** Lucide React
-
-### Backend
-- **Framework:** Node.js, Express
-- **Real-time Comms:** Server-Sent Events (SSE) for system telemetry
-- **Email Delivery:** Nodemailer (with multer for file uploads)
-
-## 📁 Project Structure
-
-```text
-Harshit-Devops-Portfolio/
-├── frontend/             # Vite + React Application
-│   ├── src/
-│   │   ├── components/   # UI Components (Hero, LiveMetrics, CliMode, etc.)
-│   │   ├── index.css     # Global Styles
-│   │   └── App.tsx       # Main Application Entry
-│   └── package.json      # Frontend Dependencies
-├── backend/              # Node.js + Express API
-│   ├── index.js          # Main Server Logic (SSE Telemetry, Contact Form)
-│   └── package.json      # Backend Dependencies
-└── amplify.yml           # AWS Amplify Deployment Configuration
-```
-
-## ⚙️ Getting Started
-
-### Prerequisites
-- Node.js (v18+ recommended)
-- npm or yarn
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/harshit-devops-portfolio.git
-cd harshit-devops-portfolio
-```
-
-### 2. Setup the Backend
-Navigate to the backend directory, install dependencies, and create an environment file.
-
-```bash
-cd backend
-npm install
-```
-
-Create a `.env` file in the `backend` directory:
-```env
-PORT=5000
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-```
-
-Start the backend server:
 ```bash
 npm run dev
-# Server will run on http://localhost:5000
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-### 3. Setup the Frontend
-Open a new terminal, navigate to the frontend directory, and install dependencies.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-cd frontend
-npm install
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Create a `.env` file in the `frontend` directory:
-```env
-VITE_API_URL=http://localhost:5000
-```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-Start the development server:
-```bash
-npm run dev
-# Server will run on http://localhost:5173
-```
+## Learn More
 
-## 🌐 Deployment
-This portfolio is configured for deployment using AWS Amplify (see `amplify.yml`). The backend can be deployed to an EC2 instance, AWS App Runner, or any standard Node.js hosting environment.
+To learn more about Next.js, take a look at the following resources:
 
----
-*Built with ❤️ to showcase the beauty of DevOps.*
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
