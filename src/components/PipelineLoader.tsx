@@ -213,7 +213,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
         }
         return t + 1;
       });
-    }, 90);
+    }, 40);
 
     return () => clearInterval(timer);
   }, []);
