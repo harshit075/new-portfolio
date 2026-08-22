@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { 
   ArrowUpRight, 
   Download, 
@@ -9,7 +9,9 @@ import {
   GitCommit, 
   GitBranch, 
   GitMerge, 
-  GitPullRequest 
+  GitPullRequest,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 const profileImage = "/profile.png";
@@ -53,6 +55,7 @@ const LinkedInIcon = ({ className }: { className?: string }) => (
 );
 
 export function About() {
+  const [showAllLogs, setShowAllLogs] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -328,7 +331,7 @@ export function About() {
 
           {/* Timeline Nodes & Cards */}
           <div className="flex flex-col gap-14 pl-14 pt-8">
-            {timelineData.map((item, index) => {
+            {(showAllLogs ? timelineData : timelineData.slice(0, 2)).map((item, index) => {
               const Icon = item.icon;
 
               return (
@@ -384,6 +387,26 @@ export function About() {
                 </motion.div>
               );
             })}
+          </div>
+
+          {/* Single Toggle Button */}
+          <div className="flex justify-center mt-12 pl-14">
+            <button
+              onClick={() => setShowAllLogs(!showAllLogs)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-border bg-bg-secondary hover:border-cyan-accent text-xs font-black uppercase tracking-wider text-foreground hover:shadow-[0_0_15px_rgba(88,166,255,0.2)] transition-all duration-300 active:scale-95 z-10"
+            >
+              {showAllLogs ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-cyan-accent dark:text-[#3fb950]" />
+                  <span>Collapse Logs</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-cyan-accent dark:text-[#3fb950]" />
+                  <span>View All Logs ({timelineData.length - 2} more)</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
