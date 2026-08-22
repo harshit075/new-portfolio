@@ -7,6 +7,7 @@ export async function GET() {
     const todosDone = await query('SELECT COUNT(*) FROM todos WHERE done = true');
     const diaryCount = await query('SELECT COUNT(*) FROM diary_entries');
     const goalsData = await query('SELECT AVG(progress) as avg_progress, COUNT(*) as total FROM goals');
+    const messagesCount = await query('SELECT COUNT(*) FROM contact_messages');
     
     return NextResponse.json({
       todos: { 
@@ -19,6 +20,9 @@ export async function GET() {
       goals: { 
         total: parseInt(goalsData.rows[0].total), 
         avgProgress: Math.round(parseFloat(goalsData.rows[0].avg_progress) || 0) 
+      },
+      messages: {
+        total: parseInt(messagesCount.rows[0].count)
       }
     });
   } catch (error: any) {

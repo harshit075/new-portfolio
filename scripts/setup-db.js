@@ -55,6 +55,19 @@ async function setup() {
     `);
     console.log('Settings table initialized');
 
+    // Contact messages table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255),
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Contact messages table initialized');
+
     console.log('Database setup complete successfully.');
   } catch (error) {
     console.error('Error setting up database:', error);

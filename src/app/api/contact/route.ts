@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { query } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,17 @@ export async function POST(req: NextRequest) {
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Name, email, and message are required' }, { status: 400 });
+    }
+
+    // Save contact message to database
+    try {
+      await query(
+        'INSERT INTO contact_messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
+        [name, email, subject || '', message]
+      );
+      console.log('Saved contact message to database for:', name);
+    } catch (dbError) {
+      console.error('Error saving contact message to database:', dbError);
     }
 
     const transporter = nodemailer.createTransport({

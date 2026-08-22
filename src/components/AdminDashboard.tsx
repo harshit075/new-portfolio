@@ -6,12 +6,14 @@ import { TimerApp } from './admin/TimerApp';
 import { DiaryApp } from './admin/DiaryApp';
 import { GoalsApp } from './admin/GoalsApp';
 import { NotesApp } from './admin/NotesApp';
+import { MessagesApp } from './admin/MessagesApp';
 
-type Tab = 'dashboard' | 'todo' | 'timer' | 'diary' | 'goals' | 'notes';
+type Tab = 'dashboard' | 'todo' | 'timer' | 'diary' | 'goals' | 'notes' | 'messages';
 
 const NAV = [
   { id: 'dashboard' as Tab, icon: '📊', label: 'Overview' },
   { id: 'todo' as Tab, icon: '✅', label: 'Tasks' },
+  { id: 'messages' as Tab, icon: '✉️', label: 'Inbox' },
   { id: 'timer' as Tab, icon: '⏱️', label: 'Timer' },
   { id: 'diary' as Tab, icon: '📓', label: 'Diary' },
   { id: 'goals' as Tab, icon: '🎯', label: 'Goals' },
@@ -99,6 +101,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'diary' && <DiaryApp />}
               {activeTab === 'goals' && <GoalsApp />}
               {activeTab === 'notes' && <NotesApp />}
+              {activeTab === 'messages' && <MessagesApp />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -122,9 +125,9 @@ function Overview({ onNavigate }: { onNavigate: (t: Tab) => void }) {
 
   const cards = [
     { label: 'Tasks', val: stats ? `${stats.todos.done}/${stats.todos.total}` : '—', sub: 'Completed', icon: '✅', tab: 'todo' as Tab, color: 'from-blue-500 to-cyan' },
+    { label: 'Inbox', val: stats ? `${stats.messages?.total || 0}` : '—', sub: 'Messages Received', icon: '✉️', tab: 'messages' as Tab, color: 'from-red-500 to-pink-400' },
     { label: 'Diary', val: stats ? `${stats.diary.total}` : '—', sub: 'Entries', icon: '📓', tab: 'diary' as Tab, color: 'from-green-500 to-emerald-400' },
     { label: 'Goals', val: stats ? `${stats.goals.avgProgress}%` : '—', sub: 'Avg Progress', icon: '🎯', tab: 'goals' as Tab, color: 'from-purple-500 to-pink-400' },
-    { label: 'Focus', val: '25m', sub: 'Pomodoro', icon: '⏱️', tab: 'timer' as Tab, color: 'from-orange-500 to-yellow-400' },
   ];
 
   return (

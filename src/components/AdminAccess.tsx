@@ -46,8 +46,8 @@ export function AdminAccess() {
   const [error, setError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Admin PIN
-  const correctPin = '987654321';
+  // Admin PIN (configurable via environment variables)
+  const correctPin = process.env.NEXT_PUBLIC_ADMIN_PIN || '987654321';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

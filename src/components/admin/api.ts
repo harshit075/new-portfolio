@@ -27,4 +27,5 @@ export interface Stats {
   todos: { total: number; done: number };
   diary: { total: number };
   goals: { total: number; avgProgress: number };
+  messages: { total: number };
 }
