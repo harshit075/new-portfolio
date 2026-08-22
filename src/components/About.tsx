@@ -55,7 +55,12 @@ const LinkedInIcon = ({ className }: { className?: string }) => (
 );
 
 export function About() {
-  const [showAllLogs, setShowAllLogs] = useState(false);
+  const [expandedCommits, setExpandedCommits] = useState<string[]>(["a1b2c3d"]);
+  const toggleCommit = (hash: string) => {
+    setExpandedCommits(prev => 
+      prev.includes(hash) ? prev.filter(h => h !== hash) : [...prev, hash]
+    );
+  };
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -316,97 +321,93 @@ export function About() {
 
         {/* Combined Experience & Education Git Log Timeline */}
         <div className="max-w-3xl mx-auto relative">
-          <div className="flex flex-col mb-16 items-center text-center">
+          <div className="flex flex-col mb-8 items-center text-center">
             <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter flex items-center gap-4 text-foreground">
               <GitBranch className="w-8 h-8 text-[#d12b6f] dark:text-[#3fb950]" />
               git log --oneline
             </h2>
-            <span className="text-xs md:text-sm font-bold tracking-widest text-[#09692a] dark:text-[#3fb950] uppercase mt-3">
+            <span className="text-xs md:text-sm font-bold tracking-widest text-[#09692a] dark:text-[#3fb950] uppercase mt-2">
               Experience & Education History
             </span>
           </div>
 
-          {/* Animated Git Branch Line (Clean Left-Aligned) */}
-          <div className="absolute left-6 top-24 bottom-0 w-1 bg-border rounded-full overflow-hidden z-0" />
+          {/* Terminal Console Block */}
+          <div className="border-[3px] border-border bg-[#0d1117] text-[#c9d1d9] rounded-3xl p-5 md:p-6 shadow-2xl relative overflow-hidden font-mono text-xs md:text-sm leading-relaxed">
+            <div className="absolute inset-1.5 border border-dashed border-white/5 rounded-2xl pointer-events-none" />
 
-          {/* Timeline Nodes & Cards */}
-          <div className="flex flex-col gap-14 pl-14 pt-8">
-            {(showAllLogs ? timelineData : timelineData.slice(0, 2)).map((item, index) => {
-              const Icon = item.icon;
+            {/* Console Header Bar */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4 z-10 relative">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-[#8b949e]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                <span className="ml-2">harshit@devops-node: ~/history</span>
+              </div>
+              <span className="text-[9px] text-[#8b949e]">UTF-8</span>
+            </div>
 
-              return (
-                <motion.div
-                  key={item.hash}
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="relative w-full"
-                >
-                  {/* Left node anchor */}
-                  <div className="absolute -left-14 top-2 flex items-center justify-center z-10">
-                    <div className={`w-8 h-8 rounded-full border-2 border-background ${item.bgColor} ${item.color} flex items-center justify-center relative shadow-md`}>
-                      <Icon className="w-4 h-4" />
-                      {/* Pulse ring for latest item */}
-                      {index === 0 && (
-                        <div className="absolute inset-0 rounded-full border border-[#108548] dark:border-[#3fb950] animate-ping opacity-60" />
-                      )}
+            {/* Command Prompt */}
+            <div className="flex items-center gap-2 mb-4 text-foreground z-10 relative pl-1 text-[11px] md:text-xs">
+              <span className="text-[#3fb950] font-bold">harshit@devops-node:~/history$</span>
+              <span className="text-white font-black animate-pulse">git log --oneline</span>
+            </div>
+
+            {/* Commits Terminal Output */}
+            <div className="flex flex-col gap-2 z-10 relative pl-1">
+              {timelineData.map((item, index) => {
+                const isExpanded = expandedCommits.includes(item.hash);
+                
+                return (
+                  <div key={item.hash} className="flex flex-col border-b border-white/5 pb-2 last:border-0">
+                    {/* The Oneline Commit Summary Row */}
+                    <div 
+                      onClick={() => toggleCommit(item.hash)}
+                      className="flex flex-wrap items-center gap-2 cursor-pointer hover:bg-white/5 p-1.5 rounded transition-all duration-200"
+                    >
+                      {/* Commit Hash */}
+                      <span className="text-[#d73a49] dark:text-[#f97583] font-bold">
+                        {item.hash}
+                      </span>
+                      
+                      {/* Commit Target/Ref tags */}
+                      <span className="text-[#22863a] dark:text-[#85e89d] font-bold text-[10px] md:text-xs">
+                        {index === 0 ? "(HEAD -> main, origin/main)" : `(tag: v1.${timelineData.length - index}.0)`}
+                      </span>
+
+                      {/* Title & Organization */}
+                      <span className="text-[#e1e4e8] font-bold text-left">
+                        {item.title} @ <span className="text-[#79c0ff]">{item.subtitle}</span>
+                      </span>
+
+                      {/* Date details */}
+                      <span className="text-[#6a737d] text-[10px] sm:ml-auto">
+                        {item.date}
+                      </span>
                     </div>
+
+                    {/* Expanded Details Panel */}
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pl-6 pr-2 py-3 text-xs text-[#8b949e] border-l-2 border-[#58a6ff] bg-white/5 rounded-r-lg mt-1 font-sans leading-relaxed flex flex-col gap-1.5"
+                      >
+                        <div className="font-mono text-[9px] text-[#ff79c6] uppercase tracking-wider">
+                          Commit Metadata
+                        </div>
+                        <div className="text-white font-semibold">
+                          {item.description}
+                        </div>
+                        <div className="flex gap-4 font-mono text-[10px] text-[#8b949e] mt-1">
+                          <span>Author: Harshit Borana &lt;harshitborana2@gmail.com&gt;</span>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
-
-                  {/* Git Commit Card */}
-                  <div className="p-5 md:p-6 rounded-2xl border-2 border-border bg-bg-secondary/40 backdrop-blur-sm hover:border-cyan-accent transition-colors duration-300 shadow-sm relative group">
-                    <div className="absolute inset-1.5 border border-dashed border-foreground/5 rounded-xl pointer-events-none" />
-                    
-                    {/* Git Log Header */}
-                    <div className="flex flex-col gap-1 text-[10px] text-foreground/60 dark:text-[#8b949e] font-mono mb-4 border-b border-border pb-3 z-10 relative">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#108548] dark:text-[#3fb950] font-black uppercase tracking-wider text-xs">
-                          commit {item.hash}
-                        </span>
-                        <span className="bg-foreground/5 dark:bg-white/5 border border-border text-foreground/75 dark:text-white/80 px-2 py-0.5 rounded text-[9px] font-bold">
-                          {item.date}
-                        </span>
-                      </div>
-                      <div className="opacity-95">Author: Harshit Borana &lt;harshitborana2@gmail.com&gt;</div>
-                    </div>
-
-                    {/* Commit Content */}
-                    <div className="z-10 relative pl-1">
-                      <h3 className="text-lg md:text-xl font-black text-foreground uppercase tracking-tight leading-none mb-1">
-                        {item.title}
-                      </h3>
-                      <div className="text-xs font-bold text-[#d12b6f] dark:text-cyan-accent uppercase tracking-wider mb-3">
-                        {item.subtitle}
-                      </div>
-                      <p className="text-xs md:text-sm text-foreground/80 dark:text-[#8b949e] leading-relaxed font-sans font-medium">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Single Toggle Button */}
-          <div className="flex justify-center mt-12 pl-14">
-            <button
-              onClick={() => setShowAllLogs(!showAllLogs)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-border bg-bg-secondary hover:border-cyan-accent text-xs font-black uppercase tracking-wider text-foreground hover:shadow-[0_0_15px_rgba(88,166,255,0.2)] transition-all duration-300 active:scale-95 z-10"
-            >
-              {showAllLogs ? (
-                <>
-                  <ChevronUp className="w-4 h-4 text-cyan-accent dark:text-[#3fb950]" />
-                  <span>Collapse Logs</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 text-cyan-accent dark:text-[#3fb950]" />
-                  <span>View All Logs ({timelineData.length - 2} more)</span>
-                </>
-              )}
-            </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
