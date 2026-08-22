@@ -25,17 +25,20 @@ export function AudioManager() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.4);
   const [showControls, setShowControls] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isTransitioningRef = useRef(false);
 
-  // Initialize main audio element
+  const playersRef = useRef<Record<string, HTMLAudioElement>>({});
+  const prevSectionRef = useRef<string>("hero");
+  const fadeIntervalsRef = useRef<{ fadeOut?: NodeJS.Timeout; fadeIn?: NodeJS.Timeout }>({});
+
+  // Initialize all audio elements for preload
   useEffect(() => {
-    const defaultTrack = tracks.hero;
-    audioRef.current = new Audio(defaultTrack.url);
-    audioRef.current.loop = true;
-    audioRef.current.volume = volume;
+    Object.entries(tracks).forEach(([key, track]) => {
+      const audio = new Audio(track.url);
+      audio.loop = true;
+      audio.volume = 0; // Starts silent
+      playersRef.current[key] = audio;
+    });
 
-    // Custom event listeners for external control (from Achievements component)
     const handleToggleEvent = () => {
       toggleAudio();
     };
@@ -51,26 +54,30 @@ export function AudioManager() {
     window.addEventListener("set-volume-global", handleVolumeEvent);
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      Object.values(playersRef.current).forEach((audio) => {
+        audio.pause();
+      });
+      playersRef.current = {};
+      
+      if (fadeIntervalsRef.current.fadeOut) clearInterval(fadeIntervalsRef.current.fadeOut);
+      if (fadeIntervalsRef.current.fadeIn) clearInterval(fadeIntervalsRef.current.fadeIn);
+      
       window.removeEventListener("toggle-audio-global", handleToggleEvent);
       window.removeEventListener("set-volume-global", handleVolumeEvent);
     };
   }, []);
 
-  // Sync state to local audio and broadcast to other listeners (like Achievements component)
+  // Broadcast volume change and adjust playing player volume
   useEffect(() => {
-    if (audioRef.current && !isTransitioningRef.current) {
-      audioRef.current.volume = volume;
+    const activePlayer = playersRef.current[activeSection];
+    if (activePlayer && activePlayer.volume !== volume) {
+      activePlayer.volume = volume;
     }
-    // Dispatch volume change event globally
     window.dispatchEvent(new CustomEvent("audio-volume-change", { detail: { volume } }));
-  }, [volume]);
+  }, [volume, activeSection]);
 
+  // Broadcast play state
   useEffect(() => {
-    // Dispatch play state change event globally
     window.dispatchEvent(new CustomEvent("audio-play-state", { detail: { isPlaying } }));
   }, [isPlaying]);
 
@@ -96,70 +103,79 @@ export function AudioManager() {
     return () => observer.disconnect();
   }, []);
 
-  // Track switching via Smooth Cross-Fade
+  // Track switching via Smooth preloaded Cross-Fade
   useEffect(() => {
-    if (!audioRef.current || !tracks[activeSection]) return;
+    const players = playersRef.current;
+    if (!players || !players[activeSection]) return;
 
-    const newTrack = tracks[activeSection];
-    const oldUrl = audioRef.current.src;
-    const newUrl = newTrack.url;
+    const prevSection = prevSectionRef.current;
+    prevSectionRef.current = activeSection;
 
-    // Check if the URL actually changed (comparing absolute URLs)
-    if (oldUrl.includes(newUrl.substring(newUrl.indexOf("/examples/")))) {
-      return; // Already playing this track
+    if (prevSection === activeSection) return;
+
+    const oldPlayer = prevSection ? players[prevSection] : null;
+    const newPlayer = players[activeSection];
+
+    // Clear previous transitions immediately to prevent overlay/stutter
+    if (fadeIntervalsRef.current.fadeOut) clearInterval(fadeIntervalsRef.current.fadeOut);
+    if (fadeIntervalsRef.current.fadeIn) clearInterval(fadeIntervalsRef.current.fadeIn);
+
+    if (!isPlaying) {
+      // Just keep active tracks ready
+      if (oldPlayer) {
+        oldPlayer.pause();
+        oldPlayer.volume = 0;
+      }
+      newPlayer.volume = 0;
+      return;
     }
 
-    isTransitioningRef.current = true;
-    const wasPlaying = isPlaying;
-    const currentVolume = volume;
+    // Smooth Cross-Fade
+    const targetVolume = volume;
+    newPlayer.volume = 0;
+    
+    // Play new track immediately (preloaded, so instant)
+    newPlayer.play().catch((err) => console.log("Fade-in play blocked:", err));
 
-    // Step 1: Smooth Fade Out
-    let fadeOutInterval = setInterval(() => {
-      if (audioRef.current && audioRef.current.volume > 0.05) {
-        audioRef.current.volume -= 0.05;
-      } else {
-        clearInterval(fadeOutInterval);
-        
-        if (audioRef.current) {
-          audioRef.current.src = newUrl;
-          audioRef.current.load();
-          audioRef.current.volume = 0;
+    let step = 0;
+    const steps = 10;
+    const intervalTime = 80; // 800ms total fade
 
-          if (wasPlaying) {
-            audioRef.current.play()
-              .then(() => {
-                // Step 2: Smooth Fade In
-                let fadeInInterval = setInterval(() => {
-                  if (audioRef.current && audioRef.current.volume < currentVolume - 0.05) {
-                    audioRef.current.volume += 0.05;
-                  } else {
-                    if (audioRef.current) audioRef.current.volume = currentVolume;
-                    isTransitioningRef.current = false;
-                    clearInterval(fadeInInterval);
-                  }
-                }, 40);
-              })
-              .catch((err) => {
-                console.log("Audio switch play blocked: ", err);
-                isTransitioningRef.current = false;
-              });
-          } else {
-            isTransitioningRef.current = false;
-          }
-        }
+    fadeIntervalsRef.current.fadeOut = setInterval(() => {
+      step++;
+      
+      if (oldPlayer && oldPlayer.volume > 0) {
+        oldPlayer.volume = Math.max(0, oldPlayer.volume - (targetVolume / steps));
       }
-    }, 40);
+      
+      if (newPlayer && newPlayer.volume < targetVolume) {
+        newPlayer.volume = Math.min(targetVolume, newPlayer.volume + (targetVolume / steps));
+      }
 
-  }, [activeSection]);
+      if (step >= steps) {
+        if (oldPlayer) {
+          oldPlayer.pause();
+          oldPlayer.volume = 0;
+        }
+        if (newPlayer) {
+          newPlayer.volume = targetVolume;
+        }
+        clearInterval(fadeIntervalsRef.current.fadeOut!);
+      }
+    }, intervalTime);
+
+  }, [activeSection, isPlaying]);
 
   const toggleAudio = () => {
-    if (!audioRef.current) return;
-    
+    const activePlayer = playersRef.current[activeSection];
+    if (!activePlayer) return;
+
     if (isPlaying) {
-      audioRef.current.pause();
+      activePlayer.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play()
+      activePlayer.volume = volume;
+      activePlayer.play()
         .then(() => setIsPlaying(true))
         .catch((err) => console.log("Audio play blocked by browser sandbox: ", err));
     }
