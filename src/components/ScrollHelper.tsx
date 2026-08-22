@@ -52,14 +52,14 @@ export function ScrollHelper() {
         }
       });
 
-      if (e.key.toLowerCase() === "j" || e.key === "ArrowDown") {
+      if (e.key.toLowerCase() === "j") {
         e.preventDefault();
         const nextIndex = Math.min(currentSectionIndex + 1, SECTIONS.length - 1);
         const nextEl = document.getElementById(SECTIONS[nextIndex]);
         if (nextEl) {
           nextEl.scrollIntoView({ behavior: "smooth" });
         }
-      } else if (e.key.toLowerCase() === "k" || e.key === "ArrowUp") {
+      } else if (e.key.toLowerCase() === "k") {
         e.preventDefault();
         const prevIndex = Math.max(currentSectionIndex - 1, 0);
         const prevEl = document.getElementById(SECTIONS[prevIndex]);
