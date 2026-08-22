@@ -12,6 +12,8 @@ type Point = { r: number; c: number };
 
 export function GithubSnake() {
   const { theme } = useTheme();
+  
+  // State for rendering
   const [snake, setSnake] = useState<Point[]>([
     { r: 3, c: 5 },
     { r: 3, c: 4 },
@@ -28,18 +30,20 @@ export function GithubSnake() {
     "Connecting to Kubernetes cluster via kubeconfig...",
     "Pipeline Agent ready. Listening for incoming webhook triggers..."
   ]);
+
+  // Refs for stable game loop execution
+  const snakeRef = useRef<Point[]>([
+    { r: 3, c: 5 },
+    { r: 3, c: 4 },
+    { r: 3, c: 3 },
+    { r: 3, c: 2 },
+    { r: 3, c: 1 },
+  ]);
+  const foodsRef = useRef<Set<string>>(new Set());
   const logEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize random foods
   useEffect(() => {
     setMounted(true);
-    const initialFoods = new Set<string>();
-    while (initialFoods.size < 35) {
-      initialFoods.add(
-        `${Math.floor(Math.random() * ROWS)},${Math.floor(Math.random() * COLS)}`
-      );
-    }
-    setFoods(initialFoods);
   }, []);
 
   // Scroll terminal logs to bottom
@@ -47,146 +51,153 @@ export function GithubSnake() {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
+  // Stable Game Loop
   useEffect(() => {
     if (!mounted) return;
 
+    // Initialize foods in ref and state once on mount
+    const initialFoods = new Set<string>();
+    while (initialFoods.size < 35) {
+      initialFoods.add(
+        `${Math.floor(Math.random() * ROWS)},${Math.floor(Math.random() * COLS)}`
+      );
+    }
+    foodsRef.current = initialFoods;
+    setFoods(new Set(initialFoods));
+
     const interval = setInterval(() => {
-      setSnake((prevSnake) => {
-        const head = prevSnake[0];
-        let target: Point | null = null;
-        let minDist = Infinity;
+      const currentSnake = [...snakeRef.current];
+      const currentFoods = new Set(foodsRef.current);
+      const head = currentSnake[0];
+      let target: Point | null = null;
+      let minDist = Infinity;
 
-        // Find closest food
-        foods.forEach((f) => {
-          const [fr, fc] = f.split(",").map(Number);
-          const dist = Math.abs(fr - head.r) + Math.abs(fc - head.c);
-          if (dist < minDist) {
-            minDist = dist;
-            target = { r: fr, c: fc };
-          }
-        });
-
-        // Determine possible moves (prevent 180 turns)
-        const moves = [
-          { r: 0, c: 1 },
-          { r: 0, c: -1 },
-          { r: 1, c: 0 },
-          { r: -1, c: 0 },
-        ].filter(
-          (m) =>
-            !(
-              prevSnake.length > 1 &&
-              head.r + m.r === prevSnake[1].r &&
-              head.c + m.c === prevSnake[1].c
-            )
-        );
-
-        if (target) {
-          moves.sort((a, b) => {
-            const distA =
-              Math.abs(head.r + a.r - target!.r) +
-              Math.abs(head.c + a.c - target!.c);
-            const distB =
-              Math.abs(head.r + b.r - target!.r) +
-              Math.abs(head.c + b.c - target!.c);
-            return distA - distB;
-          });
+      // Find closest food
+      currentFoods.forEach((f) => {
+        const [fr, fc] = f.split(",").map(Number);
+        const dist = Math.abs(fr - head.r) + Math.abs(fc - head.c);
+        if (dist < minDist) {
+          minDist = dist;
+          target = { r: fr, c: fc };
         }
-
-        let bestMove = moves[0];
-        for (const m of moves) {
-          const nr = head.r + m.r;
-          const nc = head.c + m.c;
-          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-            bestMove = m;
-            break;
-          }
-        }
-
-        const newHead = { r: head.r + bestMove.r, c: head.c + bestMove.c };
-
-        // Wall wrapping
-        if (newHead.r < 0) newHead.r = ROWS - 1;
-        if (newHead.r >= ROWS) newHead.r = 0;
-        if (newHead.c < 0) newHead.c = COLS - 1;
-        if (newHead.c >= COLS) newHead.c = 0;
-
-        const newSnake = [newHead, ...prevSnake];
-
-        // Eat food
-        const foodKey = `${newHead.r},${newHead.c}`;
-        if (foods.has(foodKey)) {
-          setFoods((prevFoods) => {
-            const nextFoods = new Set(prevFoods);
-            nextFoods.delete(foodKey);
-            
-            // Spawn new food
-            let spawned = false;
-            while (!spawned) {
-              const nr = Math.floor(Math.random() * ROWS);
-              const nc = Math.floor(Math.random() * COLS);
-              const nk = `${nr},${nc}`;
-              if (!nextFoods.has(nk)) {
-                nextFoods.add(nk);
-                spawned = true;
-              }
-            }
-            return nextFoods;
-          });
-
-          // Trigger pipeline success logs & increment score
-          setTotalCommits((prev) => prev + 1);
-          if (Math.random() > 0.8) {
-            setActiveStreak((prev) => prev + 1);
-          }
-
-          const steps = ["BUILDING CONTAINER", "RUNNING UNIT TESTS", "PUSHING REGISTRY", "DEPLOYING PODS"];
-          const selectedStep = steps[Math.floor(Math.random() * steps.length)];
-          const commitHash = Math.random().toString(36).substring(2, 8);
-          
-          setLogs((prevLogs) => [
-            ...prevLogs,
-            `[${new Date().toLocaleTimeString()}] Pipeline #${Math.floor(Math.random() * 900) + 100} triggered on main`,
-            `[${new Date().toLocaleTimeString()}] 🚀 commit:${commitHash} -> ${selectedStep}: OK`,
-            `[${new Date().toLocaleTimeString()}] Deployment commit:${commitHash} verified successfully.`
-          ]);
-
-        } else {
-          newSnake.pop();
-        }
-
-        if (newSnake.length > SNAKE_LENGTH) {
-          newSnake.pop();
-        }
-
-        return newSnake;
       });
+
+      // Filter moves to prevent 180-degree turns
+      const moves = [
+        { r: 0, c: 1 },
+        { r: 0, c: -1 },
+        { r: 1, c: 0 },
+        { r: -1, c: 0 },
+      ].filter(
+        (m) =>
+          !(
+            currentSnake.length > 1 &&
+            head.r + m.r === currentSnake[1].r &&
+            head.c + m.c === currentSnake[1].c
+          )
+      );
+
+      if (target) {
+        moves.sort((a, b) => {
+          const distA = Math.abs(head.r + a.r - target!.r) + Math.abs(head.c + a.c - target!.c);
+          const distB = Math.abs(head.r + b.r - target!.r) + Math.abs(head.c + b.c - target!.c);
+          return distA - distB;
+        });
+      }
+
+      let bestMove = moves[0];
+      for (const m of moves) {
+        const nr = head.r + m.r;
+        const nc = head.c + m.c;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+          bestMove = m;
+          break;
+        }
+      }
+
+      const newHead = { r: head.r + bestMove.r, c: head.c + bestMove.c };
+      
+      // Wrap boundaries
+      if (newHead.r < 0) newHead.r = ROWS - 1;
+      if (newHead.r >= ROWS) newHead.r = 0;
+      if (newHead.c < 0) newHead.c = COLS - 1;
+      if (newHead.c >= COLS) newHead.c = 0;
+
+      const newSnake = [newHead, ...currentSnake];
+      const foodKey = `${newHead.r},${newHead.c}`;
+
+      if (currentFoods.has(foodKey)) {
+        currentFoods.delete(foodKey);
+        
+        // Spawn new food
+        let spawned = false;
+        while (!spawned) {
+          const nr = Math.floor(Math.random() * ROWS);
+          const nc = Math.floor(Math.random() * COLS);
+          const nk = `${nr},${nc}`;
+          if (!currentFoods.has(nk)) {
+            currentFoods.add(nk);
+            spawned = true;
+          }
+        }
+
+        // Trigger updates
+        setTotalCommits((prev) => prev + 1);
+        if (Math.random() > 0.8) {
+          setActiveStreak((prev) => prev + 1);
+        }
+
+        const steps = ["BUILDING CONTAINER", "RUNNING UNIT TESTS", "PUSHING REGISTRY", "DEPLOYING PODS"];
+        const selectedStep = steps[Math.floor(Math.random() * steps.length)];
+        const commitHash = Math.random().toString(36).substring(2, 8);
+        
+        setLogs((prevLogs) => [
+          ...prevLogs,
+          `[${new Date().toLocaleTimeString()}] Pipeline #${Math.floor(Math.random() * 900) + 100} triggered on main`,
+          `[${new Date().toLocaleTimeString()}] 🚀 commit:${commitHash} -> ${selectedStep}: OK`,
+          `[${new Date().toLocaleTimeString()}] Deployment commit:${commitHash} verified successfully.`
+        ]);
+
+      } else {
+        newSnake.pop();
+      }
+
+      if (newSnake.length > SNAKE_LENGTH) {
+        newSnake.pop();
+      }
+
+      // Update refs
+      snakeRef.current = newSnake;
+      foodsRef.current = currentFoods;
+
+      // Update rendering state
+      setSnake(newSnake);
+      setFoods(currentFoods);
     }, 120);
 
     return () => clearInterval(interval);
-  }, [foods, mounted]);
+  }, [mounted]);
 
   // Contribution grid helper colors
   const getContributionColor = (r: number, c: number) => {
-    // Generate a pseudo-random stable intensity based on position
     const intensity = (r * 3 + c * 7) % 5;
     
     if (theme === "dark") {
       switch (intensity) {
-        case 0: return "bg-[#161b22]"; // Empty
-        case 1: return "bg-[#0e4429]"; // Low
-        case 2: return "bg-[#006d32]"; // Medium-low
-        case 3: return "bg-[#26a641]"; // Medium-high
-        case 4: return "bg-[#39d353]"; // High
+        case 0: return "bg-[#161b22]";
+        case 1: return "bg-[#0e4429]";
+        case 2: return "bg-[#006d32]";
+        case 3: return "bg-[#26a641]";
+        case 4: return "bg-[#39d353]";
         default: return "bg-[#161b22]";
       }
     } else {
       switch (intensity) {
-        case 0: return "bg-[#ebedf0]"; // Empty
-        case 1: return "bg-[#c6e48b]"; // Low
-        case 2: return "bg-[#7bc96f]"; // Medium-low
-        case 3: return "bg-[#239a3b]"; // Medium-high
-        case 4: return "bg-[#196127]"; // High
+        case 0: return "bg-[#ebedf0]";
+        case 1: return "bg-[#c6e48b]";
+        case 2: return "bg-[#7bc96f]";
+        case 3: return "bg-[#239a3b]";
+        case 4: return "bg-[#196127]";
         default: return "bg-[#ebedf0]";
       }
     }
@@ -255,7 +266,7 @@ export function GithubSnake() {
                   {Array.from({ length: ROWS }).map((_, r) =>
                     Array.from({ length: COLS }).map((_, c) => {
                       const isSnake = snake.some((p) => p.r === r && p.c === c);
-                      const isHead = snake[0].r === r && snake[0].c === c;
+                      const isHead = snake[0] && snake[0].r === r && snake[0].c === c;
                       const isFood = foods.has(`${r},${c}`);
 
                       let bgClass = getContributionColor(r, c);

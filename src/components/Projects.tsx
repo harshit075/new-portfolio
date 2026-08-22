@@ -539,7 +539,7 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
               </div>
             </div>
             <div className="p-4 md:p-6 overflow-auto bg-[#0d1117] h-full">
-              <pre className="text-[10px] md:text-xs font-mono leading-relaxed">
+              <div className="text-[10px] md:text-xs font-mono leading-relaxed whitespace-pre">
                 <div className="text-[#c9d1d9] font-mono">
                   {project.iacCode.split('\n').map((line, i) => (
                     <div key={i} className="table-row">
@@ -557,7 +557,7 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
                     </div>
                   ))}
                 </div>
-              </pre>
+              </div>
             </div>
           </div>
         </motion.div>
