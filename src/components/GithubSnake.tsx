@@ -40,15 +40,18 @@ export function GithubSnake() {
     { r: 3, c: 1 },
   ]);
   const foodsRef = useRef<Set<string>>(new Set());
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Scroll terminal logs to bottom
+  // Scroll terminal logs container to bottom
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = logContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [logs]);
 
   // Stable Game Loop
@@ -317,7 +320,7 @@ export function GithubSnake() {
             </div>
 
             {/* Scrolling Logs Screen */}
-            <div className="flex-1 overflow-y-auto font-mono text-[9.5px] leading-relaxed text-[#8b949e] pr-1 space-y-1.5 scrollbar-thin">
+            <div ref={logContainerRef} className="flex-1 overflow-y-auto font-mono text-[9.5px] leading-relaxed text-[#8b949e] pr-1 space-y-1.5 scrollbar-thin">
               {logs.map((log, i) => {
                 let colorClass = "text-[#8b949e]";
                 if (log.includes("🚀")) colorClass = "text-cyan-accent dark:text-[#3fb950] font-bold";
@@ -330,7 +333,6 @@ export function GithubSnake() {
                   </div>
                 );
               })}
-              <div ref={logEndRef} />
             </div>
 
             {/* Footer console tags */}
