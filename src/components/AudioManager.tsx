@@ -24,6 +24,7 @@ export function AudioManager() {
   const [activeSection, setActiveSection] = useState("hero");
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.4);
+  const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -35,6 +36,7 @@ export function AudioManager() {
     const audio = new Audio(defaultTrack.url);
     audio.loop = true;
     audio.volume = volume;
+    audio.muted = isMuted;
     audioRef.current = audio;
 
     const handleToggleEvent = () => {
@@ -71,6 +73,13 @@ export function AudioManager() {
     }
     window.dispatchEvent(new CustomEvent("audio-volume-change", { detail: { volume } }));
   }, [volume]);
+
+  // Sync mute state
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("audio-play-state", { detail: { isPlaying } }));
@@ -175,14 +184,28 @@ export function AudioManager() {
     const audio = audioRef.current;
     if (!audio) return;
     
+    // Clear any active transitions to prevent thread overrides
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+    }
+
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
     } else {
+      audio.volume = volume;
       audio.play()
         .then(() => setIsPlaying(true))
         .catch((err) => console.log("Audio play blocked by browser sandbox: ", err));
     }
+  };
+
+  const toggleMute = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const nextMute = !isMuted;
+    setIsMuted(nextMute);
+    audio.muted = nextMute;
   };
 
   const currentTrack = tracks[activeSection] || tracks.hero;
@@ -247,11 +270,24 @@ export function AudioManager() {
                 <button
                   onClick={toggleAudio}
                   className="p-2 border border-border hover:bg-foreground hover:text-background rounded-lg transition-colors cursor-pointer"
+                  title={isPlaying ? "Pause" : "Play"}
                 >
                   {isPlaying ? (
                     <Pause className="w-4 h-4 text-[#d12b6f] dark:text-[#3fb950]" />
                   ) : (
                     <Play className="w-4 h-4" />
+                  )}
+                </button>
+
+                <button
+                  onClick={toggleMute}
+                  className="p-2 border border-border hover:bg-foreground hover:text-background rounded-lg transition-colors cursor-pointer"
+                  title={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 text-[#d12b6f] dark:text-[#3fb950]" />
                   )}
                 </button>
 
