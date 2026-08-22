@@ -7,11 +7,13 @@ import { DiaryApp } from './admin/DiaryApp';
 import { GoalsApp } from './admin/GoalsApp';
 import { NotesApp } from './admin/NotesApp';
 import { MessagesApp } from './admin/MessagesApp';
+import { DevOpsApp } from './admin/DevOpsApp';
 
-type Tab = 'dashboard' | 'todo' | 'timer' | 'diary' | 'goals' | 'notes' | 'messages';
+type Tab = 'dashboard' | 'todo' | 'timer' | 'diary' | 'goals' | 'notes' | 'messages' | 'devops';
 
 const NAV = [
   { id: 'dashboard' as Tab, icon: '📊', label: 'Overview' },
+  { id: 'devops' as Tab, icon: '🚀', label: 'DevOps' },
   { id: 'todo' as Tab, icon: '✅', label: 'Tasks' },
   { id: 'messages' as Tab, icon: '✉️', label: 'Inbox' },
   { id: 'timer' as Tab, icon: '⏱️', label: 'Timer' },
@@ -102,6 +104,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'goals' && <GoalsApp />}
               {activeTab === 'notes' && <NotesApp />}
               {activeTab === 'messages' && <MessagesApp />}
+              {activeTab === 'devops' && <DevOpsApp />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -190,7 +193,7 @@ function Overview({ onNavigate }: { onNavigate: (t: Tab) => void }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'New Task', tab: 'todo' as Tab, icon: '➕', desc: 'Add to-do items' },
-          { label: 'Start Timer', tab: 'timer' as Tab, icon: '▶️', desc: 'Focus session' },
+          { label: 'Deploy Site', tab: 'devops' as Tab, icon: '🚀', desc: 'CI/CD pipeline' },
           { label: 'Write Entry', tab: 'diary' as Tab, icon: '✍️', desc: 'Journal thoughts' },
           { label: 'Save Note', tab: 'notes' as Tab, icon: '📝', desc: 'Quick capture' },
         ].map(q => (
