@@ -26,18 +26,16 @@ export function AudioManager() {
   const [volume, setVolume] = useState(0.4);
   const [showControls, setShowControls] = useState(false);
 
-  const playersRef = useRef<Record<string, HTMLAudioElement>>({});
-  const prevSectionRef = useRef<string>("hero");
-  const fadeIntervalsRef = useRef<{ fadeOut?: NodeJS.Timeout; fadeIn?: NodeJS.Timeout }>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize all audio elements for preload
+  // Initialize main audio element
   useEffect(() => {
-    Object.entries(tracks).forEach(([key, track]) => {
-      const audio = new Audio(track.url);
-      audio.loop = true;
-      audio.volume = 0; // Starts silent
-      playersRef.current[key] = audio;
-    });
+    const defaultTrack = tracks.hero;
+    const audio = new Audio(defaultTrack.url);
+    audio.loop = true;
+    audio.volume = volume;
+    audioRef.current = audio;
 
     const handleToggleEvent = () => {
       toggleAudio();
@@ -54,29 +52,26 @@ export function AudioManager() {
     window.addEventListener("set-volume-global", handleVolumeEvent);
 
     return () => {
-      Object.values(playersRef.current).forEach((audio) => {
-        audio.pause();
-      });
-      playersRef.current = {};
-      
-      if (fadeIntervalsRef.current.fadeOut) clearInterval(fadeIntervalsRef.current.fadeOut);
-      if (fadeIntervalsRef.current.fadeIn) clearInterval(fadeIntervalsRef.current.fadeIn);
-      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+      }
       window.removeEventListener("toggle-audio-global", handleToggleEvent);
       window.removeEventListener("set-volume-global", handleVolumeEvent);
     };
   }, []);
 
-  // Broadcast volume change and adjust playing player volume
+  // Sync state to local audio and broadcast to other listeners
   useEffect(() => {
-    const activePlayer = playersRef.current[activeSection];
-    if (activePlayer && activePlayer.volume !== volume) {
-      activePlayer.volume = volume;
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
     }
     window.dispatchEvent(new CustomEvent("audio-volume-change", { detail: { volume } }));
-  }, [volume, activeSection]);
+  }, [volume]);
 
-  // Broadcast play state
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("audio-play-state", { detail: { isPlaying } }));
   }, [isPlaying]);
@@ -103,79 +98,88 @@ export function AudioManager() {
     return () => observer.disconnect();
   }, []);
 
-  // Track switching via Smooth preloaded Cross-Fade
+  // Track switching via Safe Single-Player Cross-Fade
   useEffect(() => {
-    const players = playersRef.current;
-    if (!players || !players[activeSection]) return;
+    const audio = audioRef.current;
+    if (!audio || !tracks[activeSection]) return;
 
-    const prevSection = prevSectionRef.current;
-    prevSectionRef.current = activeSection;
+    const newTrack = tracks[activeSection];
+    const newUrl = newTrack.url;
+    const oldUrl = audio.src;
 
-    if (prevSection === activeSection) return;
-
-    const oldPlayer = prevSection ? players[prevSection] : null;
-    const newPlayer = players[activeSection];
-
-    // Clear previous transitions immediately to prevent overlay/stutter
-    if (fadeIntervalsRef.current.fadeOut) clearInterval(fadeIntervalsRef.current.fadeOut);
-    if (fadeIntervalsRef.current.fadeIn) clearInterval(fadeIntervalsRef.current.fadeIn);
-
-    if (!isPlaying) {
-      // Just keep active tracks ready
-      if (oldPlayer) {
-        oldPlayer.pause();
-        oldPlayer.volume = 0;
+    // Safe comparison of paths to see if the track is already loaded
+    const getPath = (urlStr: string) => {
+      try {
+        const parsed = new URL(urlStr, window.location.origin);
+        return parsed.pathname + parsed.search;
+      } catch {
+        return urlStr;
       }
-      newPlayer.volume = 0;
+    };
+
+    if (getPath(oldUrl) === getPath(newUrl)) {
       return;
     }
 
-    // Smooth Cross-Fade
+    // Cancel any active transitions
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+    }
+
+    if (!isPlaying) {
+      // Just swap track source silently if paused
+      audio.src = newUrl;
+      audio.load();
+      audio.volume = volume;
+      return;
+    }
+
+    // Fade out old track, swap src, load new track, and fade back in
     const targetVolume = volume;
-    newPlayer.volume = 0;
-    
-    // Play new track immediately (preloaded, so instant)
-    newPlayer.play().catch((err) => console.log("Fade-in play blocked:", err));
+    let fadeOutVolume = audio.volume;
 
-    let step = 0;
-    const steps = 10;
-    const intervalTime = 80; // 800ms total fade
-
-    fadeIntervalsRef.current.fadeOut = setInterval(() => {
-      step++;
-      
-      if (oldPlayer && oldPlayer.volume > 0) {
-        oldPlayer.volume = Math.max(0, oldPlayer.volume - (targetVolume / steps));
+    fadeIntervalRef.current = setInterval(() => {
+      if (fadeOutVolume > 0.05) {
+        fadeOutVolume = Math.max(0, fadeOutVolume - 0.05);
+        audio.volume = fadeOutVolume;
+      } else {
+        clearInterval(fadeIntervalRef.current!);
+        
+        audio.src = newUrl;
+        audio.load();
+        audio.volume = 0;
+        
+        audio.play()
+          .then(() => {
+            let fadeInVolume = 0;
+            fadeIntervalRef.current = setInterval(() => {
+              if (fadeInVolume < targetVolume - 0.05) {
+                fadeInVolume = Math.min(targetVolume, fadeInVolume + 0.05);
+                audio.volume = fadeInVolume;
+              } else {
+                audio.volume = targetVolume;
+                clearInterval(fadeIntervalRef.current!);
+              }
+            }, 40);
+          })
+          .catch((err) => {
+            console.log("Audio switch play blocked: ", err);
+            audio.volume = targetVolume;
+          });
       }
-      
-      if (newPlayer && newPlayer.volume < targetVolume) {
-        newPlayer.volume = Math.min(targetVolume, newPlayer.volume + (targetVolume / steps));
-      }
+    }, 40);
 
-      if (step >= steps) {
-        if (oldPlayer) {
-          oldPlayer.pause();
-          oldPlayer.volume = 0;
-        }
-        if (newPlayer) {
-          newPlayer.volume = targetVolume;
-        }
-        clearInterval(fadeIntervalsRef.current.fadeOut!);
-      }
-    }, intervalTime);
-
-  }, [activeSection, isPlaying]);
+  }, [activeSection]);
 
   const toggleAudio = () => {
-    const activePlayer = playersRef.current[activeSection];
-    if (!activePlayer) return;
-
+    const audio = audioRef.current;
+    if (!audio) return;
+    
     if (isPlaying) {
-      activePlayer.pause();
+      audio.pause();
       setIsPlaying(false);
     } else {
-      activePlayer.volume = volume;
-      activePlayer.play()
+      audio.play()
         .then(() => setIsPlaying(true))
         .catch((err) => console.log("Audio play blocked by browser sandbox: ", err));
     }
