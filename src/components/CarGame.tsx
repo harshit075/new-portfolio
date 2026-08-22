@@ -242,122 +242,244 @@ export function CarGame() {
   }, [score, isPlaying]);
 
   return (
-    <section className="w-full py-16 bg-background border-t border-border-color flex flex-col items-center">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center justify-center gap-3">
-          <Trophy className="w-6 h-6 text-cyan" /> 
-          Terminal Racer
+    <section 
+      id="game" 
+      className="w-full py-24 bg-background border-t border-border flex flex-col items-center relative overflow-hidden font-mono"
+      style={{
+        backgroundImage: "var(--bg-dots)",
+        backgroundSize: "24px 24px"
+      }}
+    >
+      <style jsx global>{`
+        @keyframes scanline {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
+        }
+        .scanlines {
+          background: linear-gradient(
+            to bottom,
+            rgba(255,255,255,0),
+            rgba(255,255,255,0) 50%,
+            rgba(0,0,0,0.15) 50%,
+            rgba(0,0,0,0.15)
+          );
+          background-size: 100% 4px;
+        }
+        .crt-curve {
+          position: relative;
+        }
+        .crt-curve::after {
+          content: ' ';
+          display: block;
+          position: absolute;
+          top: 0; left: 0; bottom: 0; right: 0;
+          background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+          pointer-events: none;
+          z-index: 25;
+        }
+      `}</style>
+
+      {/* Title Header */}
+      <div className="text-center mb-12 flex flex-col items-center">
+        <h2 className="hh-title text-4xl md:text-6xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 text-foreground">
+          <Trophy className="w-8 h-8 text-cyan-accent dark:text-[#3fb950] animate-bounce" /> 
+          TERMINAL RACER
         </h2>
-        <p className="text-sm text-text-muted mt-2 tracking-widest uppercase">Dodge the traffic. Survive.</p>
+        <span className="hh-mono text-xs md:text-sm font-bold tracking-widest text-[#09692a] dark:text-[#3fb950] uppercase mt-2">
+          DODGE THE DEV DEVILS • SECURE THE PIPELINE
+        </span>
       </div>
 
-      <div className="relative flex flex-col items-center select-none">
+      {/* Main Arcade Frame */}
+      <div className="max-w-4xl w-full px-6 flex flex-col lg:flex-row items-center lg:items-stretch gap-10 justify-center">
         
-        {/* Top UI */}
-        <div className="w-[300px] flex justify-between items-center mb-4 px-2">
-          <div className="font-mono text-xl text-cyan font-bold">SCORE: {score}</div>
-          <button 
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="text-text-muted hover:text-cyan transition-colors"
-          >
-            {soundEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-          </button>
-        </div>
+        {/* Left Side: Arcade Machine Console */}
+        <div className="relative flex flex-col items-center border-[6px] border-border bg-[#0d1117] rounded-3xl p-6 shadow-2xl overflow-hidden group">
+          {/* Wood/neon side borders */}
+          <div className="absolute top-0 bottom-0 left-0 w-2.5 bg-gradient-to-b from-cyan-accent via-[#d2a8ff] to-[#3fb950] opacity-80" />
+          <div className="absolute top-0 bottom-0 right-0 w-2.5 bg-gradient-to-b from-cyan-accent via-[#d2a8ff] to-[#3fb950] opacity-80" />
 
-        {/* Game Container */}
-        <div 
-          className="relative bg-[#111] border-2 border-cyan overflow-hidden shadow-[0_0_30px_rgba(0,255,255,0.1)]"
-          style={{ width: LANE_WIDTH * LANES + 20, height: ROAD_HEIGHT }}
-        >
-          {/* Road markings */}
-          <div className="absolute inset-0 flex justify-evenly pointer-events-none opacity-20">
-            <div className="w-0.5 h-full border-l border-dashed border-white opacity-50" />
-            <div className="w-0.5 h-full border-l border-dashed border-white opacity-50" />
+          {/* Arcade Cabinet Top Bar */}
+          <div className="w-full flex justify-between items-center mb-4 px-2 pb-2 border-b border-white/5 hh-mono text-[10px] text-[#8b949e]">
+            <span className="flex items-center gap-1.5 font-bold">
+              <span className="w-2 h-2 rounded-full bg-[#ff5f56]" />
+              ARCADE STATE: {isGameOver ? "CRASHED" : isPlaying ? "RUNNING" : "READY"}
+            </span>
+            <button 
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="hover:text-cyan-accent text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              <span>SOUND</span>
+            </button>
           </div>
 
-          {/* Player Car */}
-          <motion.div
-            className="absolute bottom-[20px] bg-cyan border border-white flex items-center justify-center shadow-[0_0_15px_rgba(0,255,255,0.5)] z-20"
-            style={{ 
-              width: CAR_WIDTH, 
-              height: CAR_HEIGHT,
-              borderRadius: "4px 4px 2px 2px",
-            }}
-            animate={{ x: 10 + playerLane * LANE_WIDTH + (LANE_WIDTH - CAR_WIDTH) / 2 }}
-            transition={{ type: "spring", stiffness: 500, damping: 25 }}
-          >
-            <div className="w-full h-full relative">
-              <div className="absolute top-2 left-1 right-1 h-3 bg-black/40 rounded-sm" />
-              <div className="absolute bottom-4 left-1 right-1 h-6 bg-black/40 rounded-sm" />
-            </div>
-          </motion.div>
-
-          {/* Obstacles */}
-          {obstacles.map(obs => (
-            <div
-              key={obs.id}
-              className="absolute bg-red-600 border border-red-400 shadow-[0_0_15px_rgba(255,0,0,0.6)] flex items-center justify-center z-10"
+          {/* Curved CRT Screen Bezel */}
+          <div className="crt-curve rounded-2xl border-4 border-[#21262d] bg-[#000] p-3 shadow-inner relative">
+            
+            {/* Real CRT Scanline Effect */}
+            <div className="absolute inset-0 scanlines pointer-events-none rounded-xl z-20" />
+            <div 
+              className="absolute inset-x-0 h-2 bg-white/5 z-20 pointer-events-none"
               style={{
-                width: CAR_WIDTH,
-                height: CAR_HEIGHT,
-                left: 10 + obs.lane * LANE_WIDTH + (LANE_WIDTH - CAR_WIDTH) / 2,
-                top: obs.y,
-                borderRadius: "4px 4px 2px 2px",
+                animation: "scanline 8s linear infinite"
               }}
+            />
+
+            {/* Game Screen Canvas Box */}
+            <div 
+              className="relative bg-black overflow-hidden rounded-xl border border-white/5 shadow-[inset_0_0_30px_rgba(0,255,255,0.2)]"
+              style={{ width: LANE_WIDTH * LANES + 20, height: ROAD_HEIGHT }}
             >
-               <div className="w-full h-full relative opacity-50">
-                 <div className="absolute top-2 left-1 right-1 h-3 bg-black/60 rounded-sm" />
-                 <div className="absolute bottom-4 left-1 right-1 h-6 bg-black/60 rounded-sm" />
-               </div>
-               <span className="absolute text-white font-mono font-bold text-[10px] leading-none whitespace-nowrap -rotate-90 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] pointer-events-none">
-                 {obs.text}
-               </span>
-            </div>
-          ))}
+              {/* Lane markings */}
+              <div className="absolute inset-0 flex justify-evenly pointer-events-none opacity-20">
+                <div className="w-0.5 h-full border-l border-dashed border-white" />
+                <div className="w-0.5 h-full border-l border-dashed border-white" />
+              </div>
 
-          {/* Overlays */}
-          {!isPlaying && !isGameOver && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
-              <button 
-                onClick={startGame}
-                className="px-6 py-3 border-2 border-cyan text-cyan font-bold uppercase tracking-widest hover:bg-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)]"
+              {/* Player Car */}
+              <motion.div
+                className="absolute bottom-[20px] bg-cyan-accent border border-white flex items-center justify-center shadow-[0_0_15px_rgba(0,255,255,0.6)] z-20"
+                style={{ 
+                  width: CAR_WIDTH, 
+                  height: CAR_HEIGHT,
+                  borderRadius: "6px 6px 2px 2px",
+                }}
+                animate={{ x: 10 + playerLane * LANE_WIDTH + (LANE_WIDTH - CAR_WIDTH) / 2 }}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
               >
-                Start Engine
-              </button>
-              <p className="text-xs text-text-muted mt-4 uppercase">Use ← and → arrows to steer</p>
-            </div>
-          )}
+                <div className="w-full h-full relative">
+                  <div className="absolute top-1.5 left-1 right-1 h-3 bg-black/40 rounded-sm" />
+                  <div className="absolute bottom-3 left-1.5 right-1.5 h-5 bg-black/40 rounded-sm" />
+                </div>
+              </motion.div>
 
-          {isGameOver && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-10 backdrop-blur-md">
-              <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
-              <h3 className="text-2xl font-black uppercase text-red-500 tracking-widest mb-2">CRASHED</h3>
-              <p className="font-mono text-xl mb-6">Final Score: {score}</p>
+              {/* Obstacles */}
+              {obstacles.map(obs => (
+                <div
+                  key={obs.id}
+                  className="absolute bg-red-600 border border-red-400 shadow-[0_0_15px_rgba(255,0,0,0.6)] flex items-center justify-center z-10"
+                  style={{
+                    width: CAR_WIDTH,
+                    height: CAR_HEIGHT,
+                    left: 10 + obs.lane * LANE_WIDTH + (LANE_WIDTH - CAR_WIDTH) / 2,
+                    top: obs.y,
+                    borderRadius: "6px 6px 2px 2px",
+                  }}
+                >
+                   <div className="w-full h-full relative opacity-50">
+                     <div className="absolute top-1.5 left-1 right-1 h-3 bg-black/60 rounded-sm" />
+                     <div className="absolute bottom-3 left-1.5 right-1.5 h-5 bg-black/60 rounded-sm" />
+                   </div>
+                   <span className="absolute text-white font-mono font-bold text-[9px] leading-none whitespace-nowrap -rotate-90 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] pointer-events-none">
+                     {obs.text}
+                   </span>
+                </div>
+              ))}
+
+              {/* Overlays */}
+              {!isPlaying && !isGameOver && (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+                  <button 
+                    onClick={startGame}
+                    className="px-6 py-3 border-2 border-cyan-accent text-cyan-accent font-bold uppercase tracking-widest hover:bg-cyan-accent hover:text-black transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] active:scale-95 cursor-pointer text-xs"
+                  >
+                    START ENGINE
+                  </button>
+                  <p className="text-[10px] text-[#8b949e] mt-4 uppercase">Use ← and → arrows to steer</p>
+                </div>
+              )}
+
+              {isGameOver && (
+                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+                  <AlertTriangle className="w-10 h-10 text-red-500 mb-3 animate-pulse" />
+                  <h3 className="text-xl font-black uppercase text-red-500 tracking-widest mb-1">PIPELINE CRASHED</h3>
+                  <p className="font-mono text-sm mb-5 text-[#8b949e]">Score: {score}</p>
+                  <button 
+                    onClick={startGame}
+                    className="px-6 py-3 border-2 border-cyan-accent text-cyan-accent font-bold uppercase tracking-widest hover:bg-cyan-accent hover:text-black transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] active:scale-95 cursor-pointer text-xs"
+                  >
+                    REDEPLOY SYSTEM
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Physical Arcade Cabinet Controller Panel */}
+          <div className="w-full mt-6 bg-[#21262d] rounded-2xl p-4 flex justify-between items-center border border-white/5 shadow-inner">
+            <div className="flex gap-3">
               <button 
-                onClick={startGame}
-                className="px-6 py-3 border-2 border-cyan text-cyan font-bold uppercase tracking-widest hover:bg-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)]"
+                className="w-12 h-12 bg-[#ff5f56]/10 hover:bg-[#ff5f56]/20 border border-[#ff5f56]/30 text-[#ff5f56] flex items-center justify-center active:scale-90 transition-all rounded-full cursor-pointer"
+                onClick={() => isPlaying && playerLane > 0 && setPlayerLane(prev => prev - 1)}
+                title="Steer Left"
               >
-                Play Again
+                <span className="text-xl font-bold">←</span>
+              </button>
+              <button 
+                className="w-12 h-12 bg-[#27c93f]/10 hover:bg-[#27c93f]/20 border border-[#27c93f]/30 text-[#27c93f] flex items-center justify-center active:scale-90 transition-all rounded-full cursor-pointer"
+                onClick={() => isPlaying && playerLane < LANES - 1 && setPlayerLane(prev => prev + 1)}
+                title="Steer Right"
+              >
+                <span className="text-xl font-bold">→</span>
               </button>
             </div>
-          )}
+            
+            <div className="flex flex-col items-end gap-1">
+              <span className="hh-mono text-[8px] text-[#8b949e] uppercase">Cabinet Steer Controller</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f] animate-pulse" />
+            </div>
+          </div>
         </div>
-        
-        {/* Mobile controls */}
-        <div className="flex gap-4 mt-8 md:hidden">
-          <button 
-            className="w-16 h-16 bg-bg-secondary border border-cyan flex items-center justify-center active:bg-cyan active:text-black transition-colors rounded-lg"
-            onClick={() => isPlaying && playerLane > 0 && setPlayerLane(prev => prev - 1)}
-          >
-            <span className="text-2xl">←</span>
-          </button>
-          <button 
-            className="w-16 h-16 bg-bg-secondary border border-cyan flex items-center justify-center active:bg-cyan active:text-black transition-colors rounded-lg"
-            onClick={() => isPlaying && playerLane < LANES - 1 && setPlayerLane(prev => prev + 1)}
-          >
-            <span className="text-2xl">→</span>
-          </button>
+
+        {/* Right Side: Arcade Leaderboard and Dashboard Status screen */}
+        <div className="w-full lg:w-[40%] border-[3px] border-border bg-bg-secondary rounded-3xl p-5 flex flex-col justify-between shadow-2xl relative">
+          <div className="absolute inset-2 border border-dashed border-foreground/10 rounded-2xl pointer-events-none" />
+
+          <div className="z-10 flex flex-col gap-5 justify-between h-full py-2">
+            <div className="flex flex-col gap-4">
+              <span className="hh-mono text-[10px] font-black uppercase text-foreground/50 tracking-wider">
+                ▲ SYSTEM DIAGNOSTICS SCREEN
+              </span>
+
+              {/* Score Terminal Panel */}
+              <div className="border border-border p-4 bg-background/50 rounded-2xl flex flex-col gap-2">
+                <span className="hh-mono text-[9px] uppercase tracking-widest text-[#09692a] dark:text-[#3fb950] font-bold">
+                  ● PIPELINE TRAFFIC LOAD
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-foreground">{score}</span>
+                  <span className="text-xs text-text-muted">OPS/SEC</span>
+                </div>
+              </div>
+
+              {/* Arcade Specs Logs */}
+              <div className="border border-border p-4 bg-background/50 rounded-2xl flex flex-col gap-2.5 hh-mono text-[10px]">
+                <div className="flex justify-between border-b border-border pb-1.5">
+                  <span className="text-text-muted">HIGH SCORE:</span>
+                  <span className="font-bold text-foreground">1,048 (HARSHIT)</span>
+                </div>
+                <div className="flex justify-between border-b border-border pb-1.5">
+                  <span className="text-text-muted">PIPELINE SPEED:</span>
+                  <span className="font-bold text-foreground">{5 + Math.floor(score / 50)} MB/s</span>
+                </div>
+                <div className="flex justify-between border-b border-border pb-1.5">
+                  <span className="text-text-muted">DIFFICULTY:</span>
+                  <span className={`font-bold ${score > 100 ? 'text-[#ff5f56]' : score > 50 ? 'text-[#ffbd2e]' : 'text-[#27c93f]'}`}>
+                    {score > 100 ? "CRITICAL LOAD" : score > 50 ? "MEDIUM LOAD" : "STABLE ROUTING"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Retro cabinet instructions panel */}
+            <div className="hh-mono text-[9px] text-text-muted leading-relaxed border-t border-border pt-4">
+              <div className="mb-2 text-foreground font-bold">HOW TO PLAY:</div>
+              Use keyboard <span className="text-foreground">←</span> and <span className="text-foreground">→</span> arrow keys (or the glowing red/green arcade buttons) to dodge fatal system calls like <span className="text-[#ff5f56] font-bold">Fork Bomb</span> and <span className="text-[#ff5f56] font-bold">rm -rf /</span>. Build pipeline uptime for high scores!
+            </div>
+          </div>
         </div>
+
       </div>
     </section>
   );

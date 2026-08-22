@@ -55,7 +55,7 @@ const AWSIcon = () => (
 
 export function Skills() {
   return (
-    <section id="skills" className="relative w-full py-32 overflow-hidden bg-[#0d1117] font-mono border-y border-white/5">
+    <section id="skills" className="relative w-full py-32 overflow-hidden bg-background font-mono border-y border-border">
       <div className="max-w-6xl mx-auto px-6 lg:px-10 z-10 relative">
         <div className="flex flex-col mb-16 items-center text-center">
           <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-[#c9d1d9]">
@@ -69,7 +69,7 @@ export function Skills() {
         <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-0 mt-20 relative">
           
           {/* Connecting Line Background (Desktop) */}
-          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-1 bg-[#21262d] -translate-y-1/2 z-0">
+          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-1 bg-border -translate-y-1/2 z-0">
             <motion.div 
               initial={{ width: 0 }}
               whileInView={{ width: "100%" }}
@@ -80,7 +80,7 @@ export function Skills() {
           </div>
 
           {/* Connecting Line Background (Mobile) */}
-          <div className="block lg:hidden absolute left-1/2 top-0 h-full w-1 bg-[#21262d] -translate-x-1/2 z-0">
+          <div className="block lg:hidden absolute left-1/2 top-0 h-full w-1 bg-border -translate-x-1/2 z-0">
             <motion.div 
               initial={{ height: 0 }}
               whileInView={{ height: "100%" }}
@@ -98,13 +98,13 @@ export function Skills() {
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.2 }}
-                className="w-full max-w-[280px] bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#58a6ff] transition-colors shadow-2xl relative group"
+                className="w-full max-w-[280px] bg-bg-secondary border border-border rounded-xl p-5 hover:border-[#58a6ff] transition-colors shadow-2xl relative group"
               >
                 {/* Glow effect */}
                 <div className="absolute inset-0 bg-[#58a6ff]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none" />
 
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4 border-b border-[#30363d] pb-3">
+                <div className="flex items-start justify-between mb-4 border-b border-border pb-3">
                   <div className="flex flex-col">
                     <span className="text-[#8b949e] text-[10px] uppercase tracking-widest font-bold mb-1">Stage {index + 1}</span>
                     <h3 className="text-[#c9d1d9] font-bold text-sm">{stage.title}</h3>
@@ -149,7 +149,7 @@ export function Skills() {
               </motion.div>
 
               {/* Node Connector Dot */}
-              <div className="hidden lg:flex w-4 h-4 rounded-full bg-[#0d1117] border-2 border-[#58a6ff] absolute top-1/2 -translate-y-1/2 -z-10 shadow-[0_0_10px_rgba(88,166,255,0.5)]" />
+              <div className="hidden lg:flex w-4 h-4 rounded-full bg-background border-2 border-[#58a6ff] absolute top-1/2 -translate-y-1/2 -z-10 shadow-[0_0_10px_rgba(88,166,255,0.5)]" />
             </div>
           ))}
 

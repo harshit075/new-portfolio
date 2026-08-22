@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, Briefcase, User, Code, Mail, Terminal } from "lucide-react";
+import { Home, Briefcase, User, Code, Mail, Terminal, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
 const navItems = [
   { id: "hero", label: "Home", icon: Home },
-  { id: "projects", label: "Projects", icon: Briefcase },
-  { id: "about", label: "About", icon: User },
-  { id: "skills", label: "Skills", icon: Code },
-  { id: "contact", label: "Contact", icon: Mail },
+  { id: "projects", label: "Selected Works", icon: Briefcase },
+  { id: "about", label: "About Me", icon: User },
+  { id: "achievements", label: "Hall of Fame 🏆", icon: Trophy },
+  { id: "skills", label: "Skills Pipeline", icon: Code },
+  { id: "contact", label: "Get In Touch", icon: Mail },
 ];
 
 export function Navbar({ onOpenCli }: { onOpenCli: () => void }) {

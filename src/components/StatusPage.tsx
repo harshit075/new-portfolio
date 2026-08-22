@@ -12,7 +12,7 @@ export function StatusPage() {
   ];
 
   return (
-    <section className="w-full py-20 bg-[#0d1117] border-y border-white/5 font-mono">
+    <section className="w-full py-20 bg-background border-y border-border font-mono">
       <div className="max-w-4xl mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
           <div className="flex flex-col gap-2">
@@ -37,7 +37,7 @@ export function StatusPage() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
               viewport={{ once: true }}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-[#161b22] border border-white/5 rounded-xl gap-4 hover:border-white/10 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-bg-secondary border border-border rounded-xl gap-4 hover:border-foreground/15 transition-colors"
             >
               <div className="flex items-center gap-3">
                 {metric.type === "warning" ? (
@@ -64,7 +64,7 @@ export function StatusPage() {
           ))}
         </div>
         
-        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between text-[#8b949e] text-xs gap-4">
+        <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row items-center justify-between text-[#8b949e] text-xs gap-4">
           <span>Last updated: Just now</span>
           <a href="#contact" className="hover:text-[#58a6ff] transition-colors flex items-center gap-2">
             Report an incident (Hire Me) &rarr;

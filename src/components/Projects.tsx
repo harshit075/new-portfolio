@@ -27,8 +27,8 @@ type ProjectType = {
   title: string;
   description: string;
   device: "mobile" | "laptop";
-  github: string;
-  live: string;
+  github?: string;
+  live?: string;
   tags: string[];
   iacCode: string;
 };
@@ -36,148 +36,138 @@ type ProjectType = {
 const projectsData: ProjectType[] = [
   {
     num: "01",
-    title: "KL Code Editor",
+    title: "Jenkins Shared Library Pipeline",
     description:
-      "A production-grade online code editor and assessment platform supporting multi-language compilation. Built for Kadel Labs with candidate management, test creation, and live code execution.",
+      "Enterprise-grade custom Jenkins Shared Library automating end-to-end CI/CD for multi-service microservices. Standardizes testing, security scanning, containerization, and canary Kubernetes deployments across all business units.",
     device: "laptop",
-    github: "https://github.com/harshit075/KL-code_editor-production",
-    live: "https://kl-code-editor-production.vercel.app",
-    tags: ["TypeScript", "Next.js", "DevOps", "K8s"],
-    iacCode: `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kl-editor-executor
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: code-executor
-  template:
-    metadata:
-      labels:
-        app: code-executor
-    spec:
-      containers:
-      - name: gVisor-sandbox
-        image: kl-executor:v2.1
-        securityContext:
-          runAsNonRoot: true
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 8080`,
+    tags: ["Jenkins", "Groovy", "Kubernetes", "Helm", "CI/CD", "Docker"],
+    iacCode: `// vars/microservicePipeline.groovy
+def call(Map config = [:]) {
+  pipeline {
+    agent { label 'docker-runner' }
+    options {
+      timeout(time: 1, unit: 'HOURS')
+      ansiColor('xterm')
+      disableConcurrentBuilds()
+    }
+    stages {
+      stage('Security Scan') {
+        steps {
+          sh "trivy image --severity HIGH,CRITICAL \${config.imageName}:\${env.BUILD_ID}"
+        }
+      }
+      stage('Docker Build & Push') {
+        steps {
+          script {
+            docker.withRegistry("https://\${config.registry}", 'ecr-credentials') {
+              def image = docker.build("\${config.appName}:\${env.BUILD_NUMBER}")
+              image.push()
+            }
+          }
+        }
+      }
+      stage('GitOps Sync') {
+        steps {
+          dir('gitops-manifests') {
+            git url: 'git@github.com:org/gitops.git', branch: 'main'
+            sh "kustomize edit set image \${config.appName}=\${config.registry}/\${config.appName}:\${env.BUILD_NUMBER}"
+            sh "git commit -am 'infra: bump \${config.appName} to \${env.BUILD_NUMBER}' && git push"
+          }
+        }
+      }
+    }
+  }
+}`,
   },
   {
     num: "02",
-    title: "DevOps Project Tracker",
+    title: "Multi-Cluster EKS GitOps Platform",
     description:
-      "A comprehensive DevOps project management dashboard to track pipelines, deployments, and infrastructure tasks. A showcase of real-world DevOps workflow tooling.",
+      "Automated provisioning of production-grade AWS EKS clusters using Terraform. Configured with ArgoCD for declarative GitOps continuous delivery, Prometheus/Grafana for monitoring, and External Secrets Operator.",
     device: "laptop",
-    github: "https://github.com/harshit075/DevOps-Project-Tracker",
-    live: "https://dev-ops-project-tracker-eight.vercel.app",
-    tags: ["TypeScript", "React", "Terraform", "AWS"],
-    iacCode: `resource "aws_ecs_cluster" "tracker_cluster" {
-  name = "devops-tracker-cluster"
-  
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
-  }
-}
+    github: "https://github.com/harshit075/eks-gitops-infrastructure",
+    live: "https://argocd.demo.harshitdev.ops",
+    tags: ["Terraform", "AWS EKS", "ArgoCD", "Prometheus", "Helm"],
+    iacCode: `module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
 
-resource "aws_apprunner_service" "frontend" {
-  service_name = "tracker-ui"
+  cluster_name    = "production-eks-cluster"
+  cluster_version = "1.29"
 
-  source_configuration {
-    image_repository {
-      image_identifier      = "public.ecr.aws/tracker/ui:latest"
-      image_repository_type = "ECR_PUBLIC"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  eks_managed_node_groups = {
+    general = {
+      min_size       = 3
+      max_size       = 10
+      desired_size   = 3
+      instance_types = ["t3.xlarge"]
     }
-  }
-  
-  instance_configuration {
-    cpu    = "1024"
-    memory = "2048"
   }
 }`,
   },
   {
     num: "03",
-    title: "Jal Jeevan",
+    title: "AWS Event-Driven Serverless Pipeline",
     description:
-      "A TypeScript full-stack civic-tech application tracking water quality and rural water supply metrics across multiple zones. Built for community-level impact monitoring.",
-    device: "mobile",
-    github: "https://github.com/harshit075/jal_jeevan",
-    live: "https://jal-jeevan-rd8wptuas-harshit-boranas-projects.vercel.app",
-    tags: ["TypeScript", "Next.js", "Docker"],
+      "A highly resilient serverless data processing pipeline utilizing AWS Lambda, SQS, ECS Fargate, and DynamoDB. Implements auto-scaling policies based on SQS queue depth with Datadog monitoring.",
+    device: "laptop",
+    github: "https://github.com/harshit075/aws-serverless-pipeline",
+    live: "https://datadog.demo.harshitdev.ops",
+    tags: ["AWS Lambda", "ECS Fargate", "SQS", "DynamoDB", "Datadog"],
     iacCode: `version: "3.8"
 services:
-  api:
-    build: 
-      context: ./backend
-      target: production
+  data-processor:
+    image: internal-registry/processor:v1.2.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    image: postgis/postgis:14-3.3
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
-      interval: 10s
-      timeout: 5s
-
-volumes:
-  pgdata:`,
+      - SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/12345/data-queue
+      - DYNAMODB_TABLE=processed-data-store`,
   },
   {
     num: "04",
-    title: "Udaipur Eco Action Hub",
+    title: "Zero-Trust Secure K8s Service Mesh",
     description:
-      "An environmental civic platform for tracking eco-initiatives, waste reduction goals, and community volunteering events across Udaipur.",
+      "Implementation of a secure service mesh using Istio across multiple Kubernetes clusters. Features mTLS-by-default communication, fine-grained canary traffic routing, and secure ingress gateways via cert-manager.",
     device: "laptop",
-    github: "https://github.com/harshit075/udaipur-eco-action-hub",
-    live: "https://udaipur-eco-action-hub.vercel.app",
-    tags: ["TypeScript", "React", "CI/CD"],
-    iacCode: `name: Production Deploy
-on:
-  push:
-    branches: [ "main" ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Build Assets
-      run: |
-        npm ci
-        npm run build
-        
-    - name: Deploy to AWS S3
-      uses: aws-actions/s3-sync-action@master
-      with:
-        args: --acl public-read --follow-symlinks --delete
-      env:
-        AWS_S3_BUCKET: \${{ secrets.AWS_BUCKET }}
-        AWS_ACCESS_KEY_ID: \${{ secrets.AWS_KEY }}
-        AWS_SECRET_ACCESS_KEY: \${{ secrets.AWS_SECRET }}`,
+    github: "https://github.com/harshit075/secure-k8s-mesh",
+    live: "https://istio.demo.harshitdev.ops",
+    tags: ["Istio", "Kubernetes", "cert-manager", "mTLS", "Ingress"],
+    iacCode: `apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: production
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: secure-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: wildcard-cert
+    hosts:
+    - "*.harshitdev.ops"`,
   },
 ];
 
@@ -219,6 +209,196 @@ export function Projects() {
         </div>
       </div>
     </section>
+  );
+}
+
+function ProjectMockup({ num, title }: { num: string; title: string }) {
+  if (num === "01") {
+    return (
+      <div className="w-full h-full flex flex-col bg-[#0d1117] text-left font-mono text-[10px] md:text-xs text-[#c9d1d9] p-4 md:p-6 pt-12 select-none overflow-hidden border-b border-white/5">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 text-[#8b949e] text-[9px] md:text-[10px]">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+            pipeline-execution.log
+          </span>
+          <span className="text-[#3fb950] font-bold">BUILD SUCCESSFUL</span>
+        </div>
+        <div className="flex-1 space-y-1.5 overflow-y-auto pr-2 scrollbar-none opacity-85">
+          <div className="text-[#8b949e]">[Pipeline] Start Pipeline</div>
+          <div className="text-[#8b949e]">[Pipeline] node (jenkins-agent-arm64)</div>
+          <div>
+            <span className="text-[#58a6ff]">[STAGE] Static Analysis</span>
+            <div className="pl-4 text-[#8b949e]">&gt; Run SonarQube Scanner...</div>
+            <div className="pl-4 text-[#3fb950]">&gt; Quality Gate Passed (0 errors)</div>
+          </div>
+          <div>
+            <span className="text-[#58a6ff]">[STAGE] Vulnerability Scan</span>
+            <div className="pl-4 text-[#8b949e]">&gt; Trivy Scan container image...</div>
+            <div className="pl-4 text-[#3fb950]">&gt; 0 Critical, 0 High Vulnerabilities</div>
+          </div>
+          <div>
+            <span className="text-[#58a6ff]">[STAGE] Build & Push</span>
+            <div className="pl-4 text-[#8b949e]">&gt; Building container layers...</div>
+            <div className="pl-4 text-[#3fb950]">&gt; Pushed to ecr.us-east-1.amazonaws.com</div>
+          </div>
+          <div>
+            <span className="text-[#58a6ff]">[STAGE] GitOps Sync</span>
+            <div className="pl-4 text-[#8b949e]">&gt; Update Helm Tag to #1024</div>
+            <div className="pl-4 text-[#3fb950]">&gt; ArgoCD Auto-Sync triggered successfully</div>
+          </div>
+          <div className="text-[#3fb950] font-bold pt-1">[Pipeline] End: SUCCESS in 42s</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (num === "02") {
+    return (
+      <div className="w-full h-full flex flex-col bg-[#0b0e14] text-left font-mono text-[10px] md:text-xs text-[#c9d1d9] p-4 md:p-6 pt-12 select-none overflow-hidden border-b border-white/5">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 text-[#8b949e] text-[9px] md:text-[10px]">
+          <span>argocd-dashboard --app production</span>
+          <span className="bg-[#3fb950]/10 border border-[#3fb950]/30 text-[#3fb950] px-2 py-0.5 rounded text-[8px] uppercase tracking-wider font-bold">
+            Synced
+          </span>
+        </div>
+        
+        <div className="flex-1 flex flex-col justify-center gap-2 opacity-85">
+          <div className="flex items-center gap-2 bg-white/5 p-2 border border-white/5 rounded-lg">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#3fb950]/20 border border-[#3fb950]/40 flex items-center justify-center text-[8px] text-[#3fb950] font-bold">✓</div>
+            <div className="flex flex-col">
+              <span className="font-bold text-[#c9d1d9] text-[10px] md:text-xs">eks-prod-cluster</span>
+              <span className="text-[#8b949e] text-[8px]">application.argoproj.io</span>
+            </div>
+          </div>
+          
+          <div className="pl-4 border-l border-white/10 space-y-2">
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 border border-white/5 rounded-lg">
+              <div className="w-2 h-2 rounded-full bg-[#3fb950]" />
+              <div className="flex flex-col">
+                <span className="font-bold text-[#c9d1d9] text-[9px] md:text-[10px]">argocd-ingress-gateway</span>
+                <span className="text-[#8b949e] text-[8px]">Service / Ingress</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 border border-white/5 rounded-lg">
+              <div className="w-2 h-2 rounded-full bg-[#3fb950] animate-pulse" />
+              <div className="flex flex-col">
+                <span className="font-bold text-[#c9d1d9] text-[9px] md:text-[10px]">microservices-deployment</span>
+                <span className="text-[#8b949e] text-[8px]">Deployment (3 Replicas)</span>
+              </div>
+            </div>
+            
+            <div className="pl-5 flex gap-1.5">
+              <span className="text-[8px] bg-[#3fb950]/15 border border-[#3fb950]/30 text-[#3fb950] px-1.5 py-0.5 rounded font-bold">pod/api-x82m</span>
+              <span className="text-[8px] bg-[#3fb950]/15 border border-[#3fb950]/30 text-[#3fb950] px-1.5 py-0.5 rounded font-bold">pod/api-p01s</span>
+              <span className="text-[8px] bg-[#3fb950]/15 border border-[#3fb950]/30 text-[#3fb950] px-1.5 py-0.5 rounded font-bold">pod/api-q92k</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (num === "03") {
+    return (
+      <div className="w-full h-full flex flex-col bg-[#0b0e14] text-left font-mono text-[10px] md:text-xs text-[#c9d1d9] p-4 md:p-6 pt-12 select-none overflow-hidden border-b border-white/5">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 text-[#8b949e] text-[9px] md:text-[10px]">
+          <span>aws-metrics-monitor</span>
+          <span className="text-[#58a6ff] animate-pulse font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#58a6ff]" /> LIVE STREAM
+          </span>
+        </div>
+        <div className="flex-1 grid grid-cols-2 gap-3 items-center opacity-85">
+          <div className="space-y-2">
+            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+              <span className="text-[8px] text-[#8b949e] uppercase block">SQS Queue Depth</span>
+              <span className="text-xs md:text-sm font-bold text-[#ffbd2e]">124 Messages</span>
+            </div>
+            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+              <span className="text-[8px] text-[#8b949e] uppercase block">Fargate Tasks Scale</span>
+              <span className="text-xs md:text-sm font-bold text-[#3fb950]">8 running / 10 max</span>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 p-2.5 rounded-lg border border-white/5 h-[90%] flex flex-col justify-between">
+            <span className="text-[8px] text-[#8b949e] uppercase block mb-1">Throughput</span>
+            <div className="flex-1 flex flex-col justify-end gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-[#8b949e] w-8">Proc:</span>
+                <div className="flex-1 bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#3fb950] h-full rounded-full" style={{ width: "85%" }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-[#8b949e] w-8">Errors:</span>
+                <div className="flex-1 bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#ff5f56] h-full rounded-full" style={{ width: "2%" }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-[#8b949e] w-8">Lag:</span>
+                <div className="flex-1 bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#ffbd2e] h-full rounded-full" style={{ width: "42%" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (num === "04") {
+    return (
+      <div className="w-full h-full flex flex-col bg-[#0b0e14] text-left font-mono text-[10px] md:text-xs text-[#c9d1d9] p-4 md:p-6 pt-12 select-none overflow-hidden border-b border-white/5">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 text-[#8b949e] text-[9px] md:text-[10px]">
+          <span>istio-security-mesh</span>
+          <span className="text-[#3fb950] font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3fb950]" />
+            mTLS: STRICT
+          </span>
+        </div>
+        
+        <div className="flex-1 flex flex-col justify-center gap-2 opacity-85">
+          <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-[#3fb950]/30 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[#3fb950]/5" />
+            <div className="flex flex-col z-10">
+              <span className="font-bold text-[9px] text-[#c9d1d9]">Ingress Gateway</span>
+              <span className="text-[8px] text-[#8b949e]">HTTPS Router</span>
+            </div>
+            <div className="flex items-center gap-1 text-[#3fb950] z-10 text-[9px] font-bold animate-pulse">
+              <span>••••</span>
+              <span className="text-[8px]">🔒</span>
+              <span>••••&gt;</span>
+            </div>
+            <div className="flex flex-col text-right z-10">
+              <span className="font-bold text-[9px] text-[#c9d1d9]">istio-proxy</span>
+              <span className="text-[8px] text-[#3fb950]">Authenticated</span>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center gap-2 mt-1">
+            <div className="flex-1 bg-white/5 p-1.5 rounded-lg border border-white/5 text-center">
+              <span className="text-[8px] text-[#8b949e] block">Service A (v1)</span>
+              <span className="text-[9px] text-[#3fb950] font-bold">90% Traffic</span>
+            </div>
+            <div className="flex-1 bg-white/5 p-1.5 rounded-lg border border-[#58a6ff]/30 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-[#58a6ff]/5" />
+              <span className="text-[8px] text-[#8b949e] block z-10 relative">Service A (Canary)</span>
+              <span className="text-[9px] text-[#58a6ff] font-bold z-10 relative">10% Traffic</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 text-center p-4">
+      <span className="text-text-muted uppercase text-xs font-bold tracking-widest px-4 text-center group-hover:text-[#58a6ff] transition-colors">
+        {title} Interface
+      </span>
+    </div>
   );
 }
 
@@ -273,28 +453,32 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
 
         <div className="flex flex-wrap gap-4 mt-2 items-center">
           {/* GitHub Button */}
-          <a
-            href={project.github}
-            target="_blank"
-            rel="noreferrer"
-            className="group relative flex items-center gap-3 px-6 py-3 border-2 border-foreground font-bold uppercase tracking-widest overflow-hidden transition-all hover:border-[#58a6ff] hover:text-black hover:shadow-[0_0_20px_rgba(88,166,255,0.3)]"
-          >
-            <div className="absolute inset-0 bg-[#58a6ff] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-0" />
-            <GithubIcon className="w-4 h-4 relative z-10 group-hover:text-black transition-colors" />
-            <span className="relative z-10 group-hover:text-black transition-colors">GitHub</span>
-          </a>
+          {project.github && (
+            <a
+              href={project.github}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative flex items-center gap-3 px-6 py-3 border-2 border-foreground font-bold uppercase tracking-widest overflow-hidden transition-all hover:border-[#58a6ff] hover:text-black hover:shadow-[0_0_20px_rgba(88,166,255,0.3)]"
+            >
+              <div className="absolute inset-0 bg-[#58a6ff] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-0" />
+              <GithubIcon className="w-4 h-4 relative z-10 group-hover:text-black transition-colors" />
+              <span className="relative z-10 group-hover:text-black transition-colors">GitHub</span>
+            </a>
+          )}
 
           {/* Live Demo Button */}
-          <a
-            href={project.live}
-            target="_blank"
-            rel="noreferrer"
-            className="group relative flex items-center gap-3 px-6 py-3 bg-foreground text-background font-bold uppercase tracking-widest overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(88,166,255,0.3)]"
-          >
-            <div className="absolute inset-0 bg-[#58a6ff] transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-0" />
-            <span className="relative z-10 group-hover:text-black transition-colors">Live Demo</span>
-            <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 group-hover:text-black transition-all" />
-          </a>
+          {project.live && (
+            <a
+              href={project.live}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative flex items-center gap-3 px-6 py-3 bg-foreground text-background font-bold uppercase tracking-widest overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(88,166,255,0.3)]"
+            >
+              <div className="absolute inset-0 bg-[#58a6ff] transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-0" />
+              <span className="relative z-10 group-hover:text-black transition-colors">Live Demo</span>
+              <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 group-hover:text-black transition-all" />
+            </a>
+          )}
 
           {/* IaC Toggle */}
           <button
@@ -321,24 +505,21 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
         >
           {/* Front (UI Mockup) */}
           <div className="absolute inset-0 backface-hidden" style={{ backfaceVisibility: "hidden" }}>
-            <div className="absolute inset-0 border-2 border-border-color rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden bg-bg-secondary flex flex-col items-center justify-center gap-4 group hover:border-[#58a6ff]/50 transition-colors duration-500 hover:shadow-[0_0_30px_rgba(88,166,255,0.1)]">
-              <div className="absolute inset-0 bg-black/5 dark:bg-white/5" />
+            <div className="absolute inset-0 border-2 border-border-color rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden bg-[#0d1117] flex flex-col hover:border-[#58a6ff]/50 transition-colors duration-500 hover:shadow-[0_0_30px_rgba(88,166,255,0.1)]">
               {/* Simulated browser chrome for laptop */}
               {project.device === "laptop" && (
-                <div className="absolute top-0 left-0 right-0 h-8 bg-border-color/30 flex items-center px-4 gap-1.5">
+                <div className="absolute top-0 left-0 right-0 h-8 bg-border-color/30 flex items-center px-4 gap-1.5 z-20 border-b border-white/5">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                   <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                  <span className="text-[10px] text-[#8b949e] font-mono ml-4 select-none opacity-60">localhost:3000</span>
                 </div>
               )}
               {/* Simulated notch for mobile */}
               {project.device === "mobile" && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-4 rounded-full bg-border-color/50" />
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-4 rounded-full bg-border-color/50 z-20" />
               )}
-              <span className="text-text-muted uppercase text-xs font-bold tracking-widest z-10 px-4 text-center group-hover:text-[#58a6ff] transition-colors">
-                {project.title} Interface
-              </span>
-              <ExternalLink className="w-6 h-6 text-text-muted group-hover:text-[#58a6ff] transition-colors z-10" />
+              <ProjectMockup num={project.num} title={project.title} />
             </div>
           </div>
 
@@ -359,19 +540,23 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
             </div>
             <div className="p-4 md:p-6 overflow-auto bg-[#0d1117] h-full">
               <pre className="text-[10px] md:text-xs font-mono leading-relaxed">
-                <code className="text-[#c9d1d9]">
-                  {project.iacCode.split('\\n').map((line, i) => (
+                <div className="text-[#c9d1d9] font-mono">
+                  {project.iacCode.split('\n').map((line, i) => (
                     <div key={i} className="table-row">
                       <span className="table-cell pr-4 text-[#8b949e] select-none text-right opacity-50">{i + 1}</span>
-                      <span className="table-cell whitespace-pre">
-                        {line.replace(/([a-zA-Z0-9_-]+):/g, '<span style="color:#7ee787">$1</span>:')
-                             .replace(/(".*?")/g, '<span style="color:#a5d6ff">$1</span>')
-                             .replace(/(#.*)/g, '<span style="color:#8b949e">$1</span>')
-                             .replace(/(true|false)/g, '<span style="color:#79c0ff">$1</span>')}
-                      </span>
+                      <span 
+                        className="table-cell whitespace-pre"
+                        dangerouslySetInnerHTML={{
+                          __html: line
+                            .replace(/([a-zA-Z0-9_-]+):/g, '<span style="color:#7ee787">$1</span>:')
+                            .replace(/(".*?")/g, '<span style="color:#a5d6ff">$1</span>')
+                            .replace(/(#.*)/g, '<span style="color:#8b949e">$1</span>')
+                            .replace(/(true|false)/g, '<span style="color:#79c0ff">$1</span>')
+                        }}
+                      />
                     </div>
                   ))}
-                </code>
+                </div>
               </pre>
             </div>
           </div>

@@ -15,9 +15,11 @@ import { LiveMetrics } from "@/components/LiveMetrics";
 import { PipelineLoader } from "@/components/PipelineLoader";
 import { CarGame } from "@/components/CarGame";
 import { StatusPage } from "@/components/StatusPage";
-import { ExperienceTimeline } from "@/components/ExperienceTimeline";
+import { Achievements } from "@/components/Achievements";
+import { AudioManager } from "@/components/AudioManager";
 import { CliMode } from "@/components/CliMode";
 import { Cursor } from "@/components/Cursor";
+import { ScrollHelper } from "@/components/ScrollHelper";
 
 export default function Home() {
   const [isPipelineComplete, setIsPipelineComplete] = useState(false);
@@ -26,6 +28,8 @@ export default function Home() {
   return (
     <main className="flex flex-col min-h-screen selection:bg-[#58a6ff] selection:text-black font-sans bg-background relative overflow-x-hidden">
       <Cursor />
+      <AudioManager />
+      <ScrollHelper />
       <AnimatePresence>
         {!isPipelineComplete && (
           <PipelineLoader onComplete={() => setIsPipelineComplete(true)} />
@@ -42,7 +46,7 @@ export default function Home() {
         <Hero />
         <Projects />
         <About />
-        <ExperienceTimeline />
+        <Achievements />
         <Skills />
         <GithubSnake />
         <Contact />
