@@ -12,11 +12,11 @@ type Track = {
 };
 
 const tracks: Record<string, Track> = {
-  hero: { name: "Synthwave Horizon", artist: "Retro Chill", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  projects: { name: "Cyberpunk Pipeline", artist: "Matrix Beat", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  about: { name: "Acoustic Reflection", artist: "Lofi Focus", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  achievements: { name: "Retro Rankings Beat", artist: "HGoa Synth", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  skills: { name: "Digital Workflow", artist: "Pipeline Tech", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+  hero: { name: "Synthwave Horizon", artist: "Retro Chill", url: "https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.mp3" },
+  projects: { name: "Cyberpunk Pipeline", artist: "Matrix Beat", url: "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3" },
+  about: { name: "Acoustic Reflection", artist: "Lofi Focus", url: "https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.mp3" },
+  achievements: { name: "Retro Rankings Beat", artist: "HGoa Synth", url: "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3" },
+  skills: { name: "Digital Workflow", artist: "Pipeline Tech", url: "https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.mp3" },
 };
 
 export function AudioManager() {
