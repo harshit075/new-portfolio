@@ -541,21 +541,28 @@ function ProjectCard({ project, isEven }: { project: ProjectType; isEven: boolea
             <div className="p-4 md:p-6 overflow-auto bg-[#0d1117] h-full">
               <div className="text-[10px] md:text-xs font-mono leading-relaxed whitespace-pre">
                 <div className="text-[#c9d1d9] font-mono">
-                  {project.iacCode.split('\n').map((line, i) => (
-                    <div key={i} className="table-row">
-                      <span className="table-cell pr-4 text-[#8b949e] select-none text-right opacity-50">{i + 1}</span>
-                      <span 
-                        className="table-cell whitespace-pre"
-                        dangerouslySetInnerHTML={{
-                          __html: line
-                            .replace(/([a-zA-Z0-9_-]+):/g, '<span style="color:#7ee787">$1</span>:')
-                            .replace(/(".*?")/g, '<span style="color:#a5d6ff">$1</span>')
-                            .replace(/(#.*)/g, '<span style="color:#8b949e">$1</span>')
-                            .replace(/(true|false)/g, '<span style="color:#79c0ff">$1</span>')
-                        }}
-                      />
-                    </div>
-                  ))}
+                  {project.iacCode.split('\n').map((line, i) => {
+                    let highlighted = line;
+                    if (line.trim().startsWith('//')) {
+                      highlighted = `<span style="color:#8b949e">${line}</span>`;
+                    } else {
+                      highlighted = line
+                        .replace(/("[^"]*")/g, '<span style="color:#a5d6ff">$1</span>')
+                        .replace(/('[^']*')/g, '<span style="color:#a5d6ff">$1</span>')
+                        .replace(/^(\s*)([a-zA-Z0-9_-]+):/g, '$1<span style="color:#7ee787">$2</span>:')
+                        .replace(/\b(true|false)\b/g, '<span style="color:#79c0ff">$1</span>');
+                    }
+
+                    return (
+                      <div key={i} className="table-row">
+                        <span className="table-cell pr-4 text-[#8b949e] select-none text-right opacity-50">{i + 1}</span>
+                        <span 
+                          className="table-cell whitespace-pre"
+                          dangerouslySetInnerHTML={{ __html: highlighted }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
