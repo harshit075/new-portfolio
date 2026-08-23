@@ -13,9 +13,6 @@ export function Contact() {
 
     try {
       const payload = new FormData();
-      // Access Key from Web3Forms (User will put this in .env)
-      payload.append("access_key", process.env.NEXT_PUBLIC_WEB3FORMS_KEY || "YOUR_ACCESS_KEY_HERE");
-      
       payload.append("name", formData.name);
       payload.append("email", formData.email);
       payload.append("subject", formData.subject);
@@ -25,7 +22,7 @@ export function Contact() {
         payload.append("attachment", attachment);
       }
 
-      const response = await fetch("https://api.web3forms.com/submit", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         body: payload,
       });

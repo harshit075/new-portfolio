@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name, email, and message are required' }, { status: 400 });
     }
 
+    let dbSaved = false;
     // Save contact message to database
     try {
       await query(
@@ -22,41 +23,50 @@ export async function POST(req: NextRequest) {
         [name, email, subject || '', message]
       );
       console.log('Saved contact message to database for:', name);
+      dbSaved = true;
     } catch (dbError) {
       console.error('Error saving contact message to database:', dbError);
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'harshitborana75@gmail.com',
-        pass: process.env.EMAIL_PASS // App Password
-      }
-    });
-
-    const mailOptions: any = {
-      from: process.env.EMAIL_USER || 'harshitborana75@gmail.com',
-      to: 'harshitborana75@gmail.com',
-      subject: subject ? `Portfolio Contact: ${subject}` : `New Portfolio Contact from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
-      replyTo: email
-    };
-
-    if (file && file.size > 0) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      mailOptions.attachments = [
-        {
-          filename: file.name,
-          content: buffer
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER || 'harshitborana75@gmail.com',
+          pass: process.env.EMAIL_PASS // App Password
         }
-      ];
+      });
+
+      const mailOptions: any = {
+        from: process.env.EMAIL_USER || 'harshitborana75@gmail.com',
+        to: 'harshitborana75@gmail.com',
+        subject: subject ? `Portfolio Contact: ${subject}` : `New Portfolio Contact from ${name}`,
+        text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
+        replyTo: email
+      };
+
+      if (file && file.size > 0) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        mailOptions.attachments = [
+          {
+            filename: file.name,
+            content: buffer
+          }
+        ];
+      }
+
+      await transporter.sendMail(mailOptions);
+      console.log('Successfully sent contact email from:', name);
+    } catch (emailError: any) {
+      console.error('Error sending email:', emailError);
+      if (!dbSaved) {
+        return NextResponse.json({ error: 'Failed to save or send message' }, { status: 500 });
+      }
     }
 
-    await transporter.sendMail(mailOptions);
-    console.log('Successfully sent contact email from:', name);
     return NextResponse.json({ success: true, message: 'Message received successfully' });
   } catch (error: any) {
-    console.error('Error sending email:', error);
-    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    console.error('Error in contact form handler:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
