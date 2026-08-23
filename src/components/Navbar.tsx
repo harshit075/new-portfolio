@@ -6,8 +6,8 @@ import { motion } from "framer-motion";
 
 const navItems = [
   { id: "hero", label: "Home", icon: Home },
-  { id: "projects", label: "Selected Works", icon: Briefcase },
   { id: "about", label: "About Me", icon: User },
+  { id: "projects", label: "Selected Works", icon: Briefcase },
   { id: "achievements", label: "Hall of Fame 🏆", icon: Trophy },
   { id: "skills", label: "Skills Pipeline", icon: Code },
   { id: "contact", label: "Get In Touch", icon: Mail },

@@ -43,8 +43,8 @@ export default function Home() {
         <ThemeToggle />
         <LiveMetrics />
         <Hero />
-        <Projects />
         <About />
+        <Projects />
         <Achievements />
         <Skills />
         <Contact />
