@@ -252,7 +252,7 @@ export function About() {
                 <span className="text-[9px] font-black tracking-widest text-[#108548] dark:text-[#3fb950] border border-[#108548]/30 dark:border-[#3fb950]/30 px-2 py-0.5 rounded uppercase font-mono">
                   SPEAKER
                 </span>
-                <span className="text-[8px] font-bold text-foreground/50 tracking-wider">HACKER HOUSE GOA</span>
+                <span className="text-[8px] font-bold text-foreground/50 tracking-wider">Build Innovate Automate</span>
               </div>
 
               <div className="w-full h-[74%] rounded-xl overflow-hidden border border-border bg-black relative group">
