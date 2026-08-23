@@ -4,7 +4,6 @@ import { Hero } from "@/components/Hero";
 import { Projects } from "@/components/Projects";
 import { About } from "@/components/About";
 import { Skills } from "@/components/Skills";
-import { GithubSnake } from "@/components/GithubSnake";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useState } from "react";
@@ -48,7 +47,6 @@ export default function Home() {
         <About />
         <Achievements />
         <Skills />
-        <GithubSnake />
         <Contact />
         <StatusPage />
         <CarGame />
