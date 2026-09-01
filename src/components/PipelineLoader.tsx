@@ -2,9 +2,25 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, ChevronRight, Activity, Cpu, Database, Server, Network, Globe, ShieldAlert } from "lucide-react";
+import { 
+  Terminal, 
+  Activity, 
+  Cpu, 
+  Database, 
+  Server, 
+  Network, 
+  Globe, 
+  Volume2, 
+  VolumeX, 
+  FastForward, 
+  Play, 
+  Pause, 
+  Filter, 
+  X 
+} from "lucide-react";
 
 type ServiceStatus = "queued" | "linting" | "building" | "testing" | "deploying" | "success";
+type SpeedMode = "1x" | "2x" | "turbo";
 
 interface Microservice {
   id: string;
@@ -12,6 +28,13 @@ interface Microservice {
   status: ServiceStatus;
   progress: number;
   icon: any;
+}
+
+interface LogEntry {
+  id: string;
+  text: string;
+  timestamp: string;
+  serviceId?: string;
 }
 
 const bootLogs = [
@@ -96,9 +119,10 @@ const serviceLogs: Record<string, string[]> = {
 };
 
 let audioCtx: AudioContext | null = null;
+let isAudioMutedGlobal = false;
 
 const playTone = (freq = 600, type: OscillatorType = "square", duration = 0.1, vol = 0.03) => {
-  if (!audioCtx) return;
+  if (isAudioMutedGlobal || !audioCtx) return;
   try {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
@@ -119,7 +143,7 @@ const playTone = (freq = 600, type: OscillatorType = "square", duration = 0.1, v
 };
 
 const playClick = () => {
-  if (!audioCtx) return;
+  if (isAudioMutedGlobal || !audioCtx) return;
   try {
     if (audioCtx.state === 'suspended') return;
     const osc = audioCtx.createOscillator();
@@ -138,7 +162,7 @@ const playClick = () => {
 };
 
 const playChord = (freqs: number[], type: OscillatorType = "sine", duration = 2.0, vol = 0.06) => {
-  if (!audioCtx) return;
+  if (isAudioMutedGlobal || !audioCtx) return;
   try {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
@@ -163,13 +187,38 @@ const playChord = (freqs: number[], type: OscillatorType = "sine", duration = 2.
   }
 };
 
+const getTimestamp = () => {
+  const now = new Date();
+  const time = now.toTimeString().split(" ")[0];
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+  return `${time}.${ms}`;
+};
+
 export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
   const [tick, setTick] = useState(0);
-  const [logs, setLogs] = useState<{ id: string; text: string }[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const consoleEndRef = useRef<HTMLDivElement>(null);
   
-  // Two phases: "boot" and "pipeline"
+  // Interactive control states
   const [phase, setPhase] = useState<"boot" | "pipeline">("boot");
+  const [speed, setSpeed] = useState<SpeedMode>("1x");
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [simulatedPing, setSimulatedPing] = useState(12);
+
+  // Sync mute state globally
+  useEffect(() => {
+    isAudioMutedGlobal = isMuted;
+  }, [isMuted]);
+
+  // Micro jitter for simulated latency
+  useEffect(() => {
+    const pingTimer = setInterval(() => {
+      setSimulatedPing(Math.floor(10 + Math.random() * 6));
+    }, 1200);
+    return () => clearInterval(pingTimer);
+  }, []);
 
   // Initialize microservices
   const [services, setServices] = useState<Microservice[]>([
@@ -179,6 +228,36 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
     { id: "payment-service", name: "payment-service", status: "queued", progress: 0, icon: Server },
     { id: "frontend-spa", name: "frontend-spa", status: "queued", progress: 0, icon: Globe },
   ]);
+
+  // Keyboard navigation & accessibility controls: ESC, Space, M, P
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Skip
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onComplete();
+      }
+      // Space: Toggle speed (1x -> 2x -> turbo -> 1x)
+      else if (e.code === "Space") {
+        e.preventDefault();
+        setSpeed((prev) => (prev === "1x" ? "2x" : prev === "2x" ? "turbo" : "1x"));
+        playClick();
+      }
+      // M: Toggle mute
+      else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        setIsMuted((prev) => !prev);
+      }
+      // P: Toggle pause
+      else if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        setIsPaused((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onComplete]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -203,8 +282,13 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
     };
   }, []);
 
-  // Main simulation timer loop (72 ticks: 0-12 boot screen, 13-72 pipeline graph)
+  // Main simulation timer loop with dynamic speed & pause controls
+  // (72 ticks: 0-12 boot screen, 13-72 pipeline graph)
+  const intervalMs = isPaused ? null : speed === "turbo" ? 10 : speed === "2x" ? 22 : 40;
+
   useEffect(() => {
+    if (intervalMs === null) return;
+
     const timer = setInterval(() => {
       setTick((t) => {
         if (t >= 72) {
@@ -213,10 +297,10 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
         }
         return t + 1;
       });
-    }, 40);
+    }, intervalMs);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [intervalMs]);
 
   // Sync simulation logic based on tick counts
   useEffect(() => {
@@ -225,19 +309,18 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
     // Phase 1: Boot Sequence
     if (tick <= 12) {
       setPhase("boot");
-      // Add boot log on each tick
       const logText = bootLogs[tick - 1];
       if (logText) {
         setLogs((prev) => {
           if (prev.some((l) => l.text === logText)) return prev;
           playClick();
-          return [...prev, { id: `boot-${tick}`, text: logText }];
+          return [...prev, { id: `boot-${tick}`, text: logText, timestamp: getTimestamp() }];
         });
       }
       return;
     }
 
-    // Flicker/transition to pipeline phase when crossing tick 13
+    // Transition to pipeline phase when crossing tick 13
     if (tick === 13) {
       setPhase("pipeline");
       setLogs([]); // Clear boot logs to start fresh with deploy logs
@@ -255,7 +338,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
       return () => clearTimeout(endTimer);
     }
 
-    // Map tick offset (14-72) to the same building algorithm (0-58 ticks)
+    // Map tick offset (14-72) to the building algorithm (0-58 ticks)
     const pipelineTick = tick - 14;
 
     const updatedServices = services.map((srv) => {
@@ -388,7 +471,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
         }
       }
 
-      // Check if status transition requires a tone
+      // Play sound on status changes
       if (status !== srv.status) {
         if (status === "success") {
           playTone(900, "sine", 0.08, 0.015);
@@ -404,7 +487,12 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
         setLogs((prevLogs) => {
           if (prevLogs.some((l) => l.text === text)) return prevLogs;
           playClick();
-          return [...prevLogs, { id: `${srv.id}-${pipelineTick}-${logIndex}`, text }];
+          return [...prevLogs, { 
+            id: `${srv.id}-${pipelineTick}-${logIndex}`, 
+            text, 
+            timestamp: getTimestamp(),
+            serviceId: srv.id 
+          }];
         });
       }
 
@@ -444,7 +532,6 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
 
   const getStageActiveState = (stageName: string) => {
     if (tick <= 12) return "queued";
-    const pipelineTick = tick - 14;
     
     if (stageName === "lint") {
       const active = services.some((s) => s.status === "linting");
@@ -485,6 +572,11 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
     }
   };
 
+  // Filter logs if a specific microservice is clicked
+  const displayedLogs = selectedService 
+    ? logs.filter((l) => l.serviceId === selectedService || !l.serviceId)
+    : logs;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -496,13 +588,60 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
       {/* Scanline cyber overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,6px_100%] pointer-events-none z-50 opacity-25" />
 
-      {/* Skip Button */}
-      <button 
-        onClick={onComplete}
-        className="absolute top-6 right-6 md:top-8 md:right-8 text-[#8b949e] hover:text-[#c9d1d9] text-[10px] uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors border border-white/5 flex items-center gap-1.5 z-50 cursor-pointer"
-      >
-        Skip <span className="text-[#58a6ff] border border-[#58a6ff]/30 px-1 rounded text-[8px]">ESC</span>
-      </button>
+      {/* Persistent Top-Right Controls Bar */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-8 flex items-center gap-2 z-50">
+        {/* Pause/Play Button */}
+        <button
+          onClick={() => {
+            setIsPaused((p) => !p);
+            playClick();
+          }}
+          title={isPaused ? "Resume Simulation [P]" : "Pause Simulation [P]"}
+          className="text-[#8b949e] hover:text-[#c9d1d9] bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded transition-colors border border-white/5 flex items-center gap-1 cursor-pointer"
+        >
+          {isPaused ? (
+            <Play className="w-3.5 h-3.5 text-[#3fb950]" />
+          ) : (
+            <Pause className="w-3.5 h-3.5" />
+          )}
+          <span className="hidden sm:inline text-[9px] uppercase tracking-wider">{isPaused ? "Resume" : "Pause"}</span>
+        </button>
+
+        {/* Speed Selector */}
+        <button
+          onClick={() => {
+            setSpeed((s) => (s === "1x" ? "2x" : s === "2x" ? "turbo" : "1x"));
+            playClick();
+          }}
+          title="Toggle Speed [SPACE]"
+          className="text-[#8b949e] hover:text-cyan-accent bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded transition-colors border border-white/5 flex items-center gap-1 cursor-pointer"
+        >
+          <FastForward className="w-3.5 h-3.5 text-cyan-accent" />
+          <span className="text-[9px] font-bold uppercase text-cyan-accent">{speed}</span>
+        </button>
+
+        {/* Audio Mute/Unmute */}
+        <button
+          onClick={() => setIsMuted((m) => !m)}
+          title={isMuted ? "Unmute Audio [M]" : "Mute Audio [M]"}
+          className="text-[#8b949e] hover:text-[#c9d1d9] bg-white/5 hover:bg-white/10 p-1.5 rounded transition-colors border border-white/5 flex items-center justify-center cursor-pointer"
+        >
+          {isMuted ? (
+            <VolumeX className="w-3.5 h-3.5 text-[#ff7b72]" />
+          ) : (
+            <Volume2 className="w-3.5 h-3.5 text-[#3fb950]" />
+          )}
+        </button>
+
+        {/* Skip Button (with ESC key badge) */}
+        <button 
+          onClick={onComplete}
+          title="Skip Intro Sequence [ESC]"
+          className="text-[#8b949e] hover:text-[#c9d1d9] text-[10px] uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors border border-white/5 flex items-center gap-1.5 cursor-pointer"
+        >
+          Skip <span className="text-[#58a6ff] border border-[#58a6ff]/30 px-1 rounded text-[8px]">ESC</span>
+        </button>
+      </div>
 
       <AnimatePresence mode="wait">
         {phase === "boot" ? (
@@ -513,7 +652,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.02, filter: "blur(5px)" }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-2xl bg-[#030303] border border-cyan-accent/20 rounded-xl p-6 md:p-10 shadow-[0_0_50px_rgba(0,255,255,0.03)] flex flex-col justify-between min-h-[360px] relative overflow-hidden"
+            className="w-full max-w-2xl bg-[#030303] border border-cyan-accent/20 rounded-xl p-6 md:p-10 shadow-[0_0_50px_rgba(0,255,255,0.03)] flex flex-col justify-between min-h-[380px] relative overflow-hidden"
           >
             {/* Visual borders decoration */}
             <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-cyan-accent/60" />
@@ -527,7 +666,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
                 <span className="text-[10px] uppercase tracking-widest text-[#8b949e]">CLUSTER HOST GATEWAY // SECURE</span>
               </div>
               <span className="text-[9px] font-bold text-cyan-accent uppercase tracking-widest bg-cyan-accent/10 px-2 py-0.5 border border-cyan-accent/20 rounded font-mono">
-                Booting
+                Booting ({Math.min(100, Math.round((tick / 12) * 100))}%)
               </span>
             </div>
 
@@ -536,7 +675,8 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
               {logs.map((log) => {
                 const isHeading = log.text.includes("---") || log.text.includes("WELCOME");
                 return (
-                  <div key={log.id} className="flex gap-2">
+                  <div key={log.id} className="flex items-baseline gap-2">
+                    <span className="text-[9px] text-[#484f58] select-none font-mono">[{log.timestamp}]</span>
                     <span className="text-cyan-accent select-none">&gt;</span>
                     <span className={`break-all ${isHeading ? "text-cyan-accent font-black tracking-wider" : "text-[#c9d1d9]"}`}>{log.text}</span>
                   </div>
@@ -545,9 +685,20 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
               <div className="w-1.5 h-3 bg-cyan-accent animate-pulse mt-0.5" />
             </div>
 
+            {/* Boot phase progress bar */}
+            <div className="w-full bg-[#161b22] h-1.5 rounded-full overflow-hidden mb-3">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-accent/60 to-cyan-accent transition-all duration-150"
+                style={{ width: `${Math.min(100, Math.round((tick / 12) * 100))}%` }}
+              />
+            </div>
+
             <div className="border-t border-white/5 pt-4 flex justify-between items-center text-[9px] text-[#8b949e]">
               <span>NODE: <strong className="text-cyan-accent font-mono">mac-client-uplink</strong></span>
-              <span>EST. TIME: 1.2S</span>
+              <span className="flex items-center gap-2">
+                <span>LATENCY: <strong className="text-[#3fb950] font-mono">{simulatedPing}ms</strong></span>
+                <span>EST: {speed === "turbo" ? "0.3S" : speed === "2x" ? "0.6S" : "1.2S"}</span>
+              </span>
             </div>
           </motion.div>
         ) : (
@@ -558,7 +709,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-5xl h-[90vh] md:h-[80vh] rounded-2xl overflow-hidden bg-[#050505] border border-white/10 shadow-[0_0_80px_rgba(0,255,255,0.05)] flex flex-col relative"
+            className="w-full max-w-5xl h-[92vh] md:h-[82vh] rounded-2xl overflow-hidden bg-[#050505] border border-white/10 shadow-[0_0_80px_rgba(0,255,255,0.05)] flex flex-col relative"
           >
             {/* Loader Header */}
             <div className="px-6 py-4 bg-[#0d1117] border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
@@ -572,11 +723,17 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-cyan-accent animate-ping" />
-                <span className="text-[10px] font-bold text-cyan-accent uppercase tracking-widest bg-cyan-accent/10 px-2 py-0.5 border border-cyan-accent/20 rounded">
-                  Active Run: {Math.round(((tick - 13) / 59) * 100)}%
-                </span>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/5 rounded text-[9px] text-[#8b949e]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+                  <span>Ping: <strong className="text-[#3fb950]">{simulatedPing}ms</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-accent animate-ping" />
+                  <span className="text-[10px] font-bold text-cyan-accent uppercase tracking-widest bg-cyan-accent/10 px-2 py-0.5 border border-cyan-accent/20 rounded">
+                    Active Run: {Math.min(100, Math.round(((tick - 13) / 59) * 100))}%
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -612,18 +769,40 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
               <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Column: Microservices statuses */}
                 <div className="flex flex-col gap-3 bg-[#0d1117]/30 border border-white/5 rounded-xl p-4 overflow-y-auto">
-                  <span className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider mb-2 block">Cluster Deploy Status</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">
+                      Cluster Deploy Status
+                    </span>
+                    <span className="text-[9px] text-[#8b949e]">
+                      (Click service to filter logs)
+                    </span>
+                  </div>
                   
                   {services.map((srv) => {
                     const IconComponent = srv.icon;
+                    const isSelected = selectedService === srv.id;
+
                     return (
-                      <div key={srv.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 border border-white/5 rounded-lg bg-black/40 gap-3 hover:border-white/10 transition-colors">
+                      <div 
+                        key={srv.id} 
+                        onClick={() => setSelectedService((prev) => (prev === srv.id ? null : srv.id))}
+                        className={`flex flex-col md:flex-row md:items-center justify-between p-3 border rounded-lg bg-black/40 gap-3 transition-all cursor-pointer ${
+                          isSelected 
+                            ? "border-cyan-accent shadow-[0_0_15px_rgba(0,255,255,0.15)] bg-cyan-accent/5" 
+                            : "border-white/5 hover:border-white/20 hover:bg-white/[0.02]"
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 rounded-md bg-white/5 text-[#8b949e]">
+                          <div className={`p-1.5 rounded-md ${isSelected ? "bg-cyan-accent/20 text-cyan-accent" : "bg-white/5 text-[#8b949e]"}`}>
                             <IconComponent className="w-4 h-4" />
                           </div>
                           <div>
-                            <span className="font-bold text-[#c9d1d9]">{srv.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-bold ${isSelected ? "text-cyan-accent" : "text-[#c9d1d9]"}`}>{srv.name}</span>
+                              {isSelected && (
+                                <span className="text-[8px] bg-cyan-accent/20 text-cyan-accent px-1.5 py-0.2 rounded font-mono uppercase">Filtered</span>
+                              )}
+                            </div>
                             <div className="w-28 md:w-40 h-1 bg-[#161b22] rounded-full overflow-hidden mt-1.5">
                               <div 
                                 className="h-full bg-cyan-accent transition-all duration-300"
@@ -634,7 +813,7 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
                         </div>
                         
                         <div className="flex items-center gap-3 ml-auto md:ml-0">
-                          <span className="text-[9px] text-[#8b949e] font-bold">{srv.progress}%</span>
+                          <span className="text-[9px] text-[#8b949e] font-bold">{Math.round(srv.progress)}%</span>
                           <span className={`px-2.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide transition-all duration-300 ${getStatusColor(srv.status)}`}>
                             {getStatusLabel(srv.status)}
                           </span>
@@ -650,19 +829,45 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
                     <div className="flex items-center gap-2">
                       <Terminal className="w-3.5 h-3.5 text-cyan-accent" />
                       <span className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Deploy Console Stream</span>
+                      {selectedService && (
+                        <span className="text-[9px] text-cyan-accent bg-cyan-accent/10 px-2 py-0.5 rounded border border-cyan-accent/20 flex items-center gap-1">
+                          <Filter className="w-2.5 h-2.5" />
+                          {selectedService}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedService(null);
+                            }}
+                            className="hover:text-white ml-0.5"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#3fb950]/10 border border-[#3fb950]/20 text-[#3fb950] text-[8px] font-bold tracking-widest uppercase">
-                      <div className="w-1 h-1 rounded-full bg-[#3fb950] animate-pulse" />
-                      Streaming
+                    <div className="flex items-center gap-2">
+                      {selectedService && (
+                        <button
+                          onClick={() => setSelectedService(null)}
+                          className="text-[8px] text-[#8b949e] hover:text-white underline cursor-pointer"
+                        >
+                          Show All
+                        </button>
+                      )}
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#3fb950]/10 border border-[#3fb950]/20 text-[#3fb950] text-[8px] font-bold tracking-widest uppercase">
+                        <div className="w-1 h-1 rounded-full bg-[#3fb950] animate-pulse" />
+                        {isPaused ? "Paused" : "Streaming"}
+                      </div>
                     </div>
                   </div>
                   
                   <div className="flex-1 overflow-y-auto no-scrollbar font-mono text-[10px] text-[#8b949e] flex flex-col gap-1.5 pr-2">
-                    {logs.length === 0 && (
+                    {displayedLogs.length === 0 && (
                       <span className="text-[#30363d] italic">&gt; Initializing runner logs...</span>
                     )}
-                    {logs.map((log) => (
-                      <div key={log.id} className="flex gap-2 leading-relaxed">
+                    {displayedLogs.map((log) => (
+                      <div key={log.id} className="flex items-baseline gap-2 leading-relaxed">
+                        <span className="text-[8px] text-[#484f58] select-none font-mono">[{log.timestamp}]</span>
                         <span className="text-cyan-accent select-none">&gt;</span>
                         <span className="text-[#c9d1d9] break-all">{log.text}</span>
                       </div>
@@ -674,9 +879,20 @@ export function PipelineLoader({ onComplete }: { onComplete: () => void }) {
             </div>
 
             {/* Loader Footer */}
-            <div className="px-6 py-4 bg-[#0d1117] border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10px] text-[#8b949e]">
-              <span>Commit Status: <strong className="text-[#58a6ff] font-mono">main:e57fb32</strong></span>
-              <span className="font-bold tracking-wider text-cyan-accent">Deploying Cluster to AWS EKS via Kubernetes StatefulSets</span>
+            <div className="px-6 py-3 bg-[#0d1117] border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10px] text-[#8b949e]">
+              <div className="flex items-center gap-3">
+                <span>Commit: <strong className="text-[#58a6ff] font-mono">main:e57fb32</strong></span>
+                <span className="text-[#484f58] hidden sm:inline">|</span>
+                <span className="hidden sm:inline">EKS Nodes: <strong className="text-[#3fb950] font-mono">3/3 Ready</strong></span>
+              </div>
+
+              {/* Keyboard shortcuts hints */}
+              <div className="flex items-center gap-3 text-[9px] text-[#6e7681]">
+                <span><kbd className="text-[#58a6ff] border border-[#58a6ff]/30 px-1 py-0.5 rounded text-[8px]">ESC</kbd> Skip</span>
+                <span><kbd className="text-cyan-accent border border-cyan-accent/30 px-1 py-0.5 rounded text-[8px]">SPACE</kbd> Speed</span>
+                <span><kbd className="text-[#3fb950] border border-[#3fb950]/30 px-1 py-0.5 rounded text-[8px]">P</kbd> Pause</span>
+                <span><kbd className="text-[#bc8cff] border border-[#bc8cff]/30 px-1 py-0.5 rounded text-[8px]">M</kbd> Mute</span>
+              </div>
             </div>
           </motion.div>
         )}

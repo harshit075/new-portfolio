@@ -6,7 +6,7 @@ import { About } from "@/components/About";
 import { Skills } from "@/components/Skills";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Contact } from "@/components/Contact";
 import { Navbar } from "@/components/Navbar";
@@ -23,6 +23,15 @@ import { ScrollHelper } from "@/components/ScrollHelper";
 export default function Home() {
   const [isPipelineComplete, setIsPipelineComplete] = useState(false);
   const [isCliMode, setIsCliMode] = useState(false);
+
+  // Listen for re-triggering of the pipeline loader from CLI or StatusPage
+  useEffect(() => {
+    const handleRetrigger = () => {
+      setIsPipelineComplete(false);
+    };
+    window.addEventListener("retrigger-pipeline-loader", handleRetrigger);
+    return () => window.removeEventListener("retrigger-pipeline-loader", handleRetrigger);
+  }, []);
 
   return (
     <main className="flex flex-col min-h-screen selection:bg-[#58a6ff] selection:text-black font-sans bg-background relative overflow-x-hidden">
