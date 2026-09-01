@@ -57,6 +57,7 @@ export function CliMode({ onClose }: { onClose: () => void }) {
             <span><strong className="text-[#58a6ff]">pwd</strong>         - Print working directory</span>
             <span><strong className="text-[#58a6ff]">ping harshit</strong>  - Open connection (Contact)</span>
             <span><strong className="text-[#58a6ff]">whoami</strong>      - Display current user</span>
+            <span><strong className="text-[#58a6ff]">reboot</strong>      - Re-run startup pipeline sequence</span>
             <span><strong className="text-[#58a6ff]">clear</strong>       - Clear terminal output</span>
             <span><strong className="text-[#58a6ff]">exit</strong>        - Close CLI mode</span>
           </div>
@@ -136,6 +137,15 @@ export function CliMode({ onClose }: { onClose: () => void }) {
         } else {
           output = `bash: sudo: ${cmdArgs.slice(1).join(" ")}: command not found`;
         }
+        break;
+      case "reboot":
+      case "pipeline":
+      case "startup":
+        output = "Restarting deployment pipeline sequence...";
+        setTimeout(() => {
+          onClose();
+          window.dispatchEvent(new CustomEvent("retrigger-pipeline-loader"));
+        }, 500);
         break;
       case "clear":
         setHistory([]);

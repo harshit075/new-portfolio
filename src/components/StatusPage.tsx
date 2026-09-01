@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle, Clock, ShieldCheck } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, ShieldCheck, RefreshCw } from "lucide-react";
 
 export function StatusPage() {
   const metrics = [
@@ -20,7 +20,7 @@ export function StatusPage() {
               <ShieldCheck className="w-8 h-8 text-[#3fb950]" />
               System Status
             </h2>
-            <p className="text-[#8b949e] text-sm">Real-time status of Harshit's core systems and APIs.</p>
+            <p className="text-[#8b949e] text-sm">Real-time status of Harshit&apos;s core systems and APIs.</p>
           </div>
           
           <div className="flex items-center gap-2 bg-[#3fb950]/10 border border-[#3fb950]/30 px-4 py-2 rounded-lg">
@@ -66,9 +66,19 @@ export function StatusPage() {
         
         <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row items-center justify-between text-[#8b949e] text-xs gap-4">
           <span>Last updated: Just now</span>
-          <a href="#contact" className="hover:text-[#58a6ff] transition-colors flex items-center gap-2">
-            Report an incident (Hire Me) &rarr;
-          </a>
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent("retrigger-pipeline-loader"))}
+              className="hover:text-cyan-accent text-[#8b949e] transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Test & re-run startup pipeline simulation"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Re-run Startup Pipeline
+            </button>
+            <a href="#contact" className="hover:text-[#58a6ff] transition-colors flex items-center gap-2">
+              Report an incident (Hire Me) &rarr;
+            </a>
+          </div>
         </div>
       </div>
     </section>
