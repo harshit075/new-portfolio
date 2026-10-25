@@ -66,13 +66,24 @@ export function About() {
 
   const timelineData = [
     {
+      hash: "e7f8a9b",
+      type: "experience",
+      date: "Aug 2026 - Present",
+      title: "DevOps Engineer",
+      subtitle: "Kadel Labs",
+      description: "Promoted to full-time DevOps Engineer. Managing production and on-premise applications, architecting multi-tenancy infrastructure, and orchestrating robust CI/CD deployment pipelines utilizing AWS, Jenkins, and GitLab.",
+      icon: GitCommit,
+      color: "text-[#3fb950]",
+      bgColor: "bg-[#3fb950]/10"
+    },
+    {
       hash: "a1b2c3d",
       type: "experience",
-      date: "Feb 2026 - Present",
+      date: "Feb 2026 - Aug 2026",
       title: "Trainee DevOps Engineer",
       subtitle: "Kadel Labs",
-      description: "Building CI/CD pipelines using GitLab CI/CD, Jenkins, and GitHub Actions. Managing applications on AWS (EC2, S3, IAM), containerizing builds with Docker, and monitoring infrastructure using Prometheus and Grafana.",
-      icon: GitCommit,
+      description: "Built automated CI/CD pipelines using GitLab CI/CD, Jenkins, and GitHub Actions. Managed cloud applications on AWS (EC2, S3, IAM), containerized environments with Docker, and monitored infrastructure with Prometheus and Grafana.",
+      icon: GitMerge,
       color: "text-[#d2a8ff]",
       bgColor: "bg-[#d2a8ff]/10"
     },
@@ -83,7 +94,7 @@ export function About() {
       title: "DevOps Intern",
       subtitle: "Webanix Solutions",
       description: "Designed robust CI/CD pipelines with Jenkins and Bitbucket. Containerized server setups on AWS EC2, configured NGINX reverse proxies for load balancing/SSL, and integrated AWS IoT Core MQTT communication.",
-      icon: GitMerge,
+      icon: GitBranch,
       color: "text-[#a371f7]",
       bgColor: "bg-[#a371f7]/10"
     },
